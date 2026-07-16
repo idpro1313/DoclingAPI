@@ -6,7 +6,7 @@ services:
   docling-serve:
     build:
       context: .
-      dockerfile: docling-serve/Dockerfile
+      dockerfile: Dockerfile
     container_name: docling-serve
     ports:
       - "5001:5001"
