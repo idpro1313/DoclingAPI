@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:${PATH}"
 
-# Copy dependency files
+# Copy dependency files from docling-serve subdirectory
 COPY docling-serve/pyproject.toml docling-serve/pyproject.lock* ./
 
 # Install dependencies
@@ -47,7 +47,7 @@ RUN groupadd --gid 1000 docling && \
     useradd --uid 1000 --gid docling --shell /bin/bash --create-home docling
 USER docling
 
-# Copy application code
+# Copy application code from docling-serve subdirectory
 COPY --chown=docling:docling docling-serve/ ./docling_serve/
 
 # Environment variables with defaults

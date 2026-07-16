@@ -70,10 +70,12 @@ done
 build_image() {
     log_info "Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
     
+    # Build from repo root where docling-serve/ subdirectory exists
     docker build \
         --tag "${IMAGE_NAME}:${IMAGE_TAG}" \
         --tag "${IMAGE_NAME}:latest" \
-        ./docling-serve
+        --file docling-serve/Dockerfile \
+        .
     
     log_info "Image built successfully!"
 }
