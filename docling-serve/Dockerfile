@@ -47,7 +47,7 @@ RUN groupadd --gid 1000 docling && \
 USER docling
 
 # Copy application code
-COPY --chown=docling:docling . ./docling_serve/
+COPY --chown=docling:docling docling_serve/ ./docling_serve/
 
 # Environment variables with defaults
 ENV DOCLING_SERVE_HOST=0.0.0.0
