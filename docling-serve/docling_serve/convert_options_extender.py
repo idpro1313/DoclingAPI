@@ -84,10 +84,11 @@ class ExternalModelConfig:
         api_key = data.get("api_key", data.get("api-key", ""))
 
         extra_params = {}
-        model = ""
+        model = data.get("default_model", data.get("model", ""))
         params = data.get("params", {})
         if isinstance(params, dict):
-            model = params.get("model", "")
+            if not model:
+                model = params.get("model", "")
             extra_params = {k: v for k, v in params.items() if k != "model"}
 
         prompt = data.get("prompt", "")

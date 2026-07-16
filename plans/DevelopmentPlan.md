@@ -107,14 +107,21 @@
 
 ### 3. Acceptance Criteria
 
-- [ ] **Criterion 1:** Settings file (`settings.py`) contains new fields: `external_model_base_url`, `external_model_api_key`, `external_model_timeout`, `external_model_default_model`, `external_model_enabled`.
-- [ ] **Criterion 2:** ServicePolicy includes `external_models_enabled` flag and policy is checked before allowing external API calls.
-- [ ] **Criterion 3:** New module `convert_options_extender.py` provides `ExternalModelConfig` dataclass and `ExternalModelRegistry` for named model configurations.
-- [ ] **Criterion 4:** Existing `picture_description_api` parameter works with new external model config system.
-- [ ] **Criterion 5:** VLM pipeline (`vlm_pipeline_api`) can be configured via external API (if supported by docling).
-- [ ] **Criterion 6:** LLM post-processing (structure extraction, formatting) can use external API if docling supports it.
-- [ ] **Criterion 7:** Unit tests cover settings parsing, policy validation, and model registry operations.
-- [ ] **Criterion 8:** Integration test demonstrates end-to-end conversion with Ollama/vLLM external API.
+- [x] **Criterion 1:** Settings file (`settings.py`) contains new fields: `external_model_base_url`, `external_model_api_key`, `external_model_timeout`, `external_model_default_model`, `external_model_enabled`.
+- [x] **Criterion 2:** ServicePolicy includes `external_models_enabled` flag and policy is checked before allowing external API calls.
+- [x] **Criterion 3:** New module `convert_options_extender.py` provides `ExternalModelConfig` dataclass and `ExternalModelRegistry` for named model configurations.
+- [x] **Criterion 4:** Existing `picture_description_api` parameter works with new external model config system.
+- [ ] **Criterion 5:** VLM pipeline (`vlm_pipeline_api`) can be configured via external API (if supported by docling). — Requires docling runtime verification
+- [ ] **Criterion 6:** LLM post-processing (structure extraction, formatting) can use external API if docling supports it. — Requires docling runtime verification
+- [x] **Criterion 7:** Unit tests cover settings parsing, policy validation, and model registry operations. — 22 tests PASS
+- [ ] **Criterion 8:** Integration test demonstrates end-to-end conversion with Ollama/vLLM external API. — Requires running API server
+- [ ] **Criterion 9:** Gradio UI (`gradio_ui.py`) provides UI components for external model API configuration.
+
+### 5. Artifacts
+
+- `docling-serve/AppGraph.xml` — Knowledge Graph (graph-protocol)
+- `docling-serve/tests/test_external_model_api.py` — Unit/integration tests
+- `docling-serve/tests/test_guide.md` — QA test guide
 
 ---
 
@@ -140,3 +147,30 @@
 #### Phase 4: Integration
 - Ensure backward compatibility with existing `picture_description_api` JSON format
 - Support both server-default and per-request API configurations
+
+#### Phase 5: UI Integration (Gradio)
+
+**UI Components to Add (gradio_ui.py):**
+1. **External Model Settings Accordion** — collapsible section in "Options"
+   - `enable_external_model` — Checkbox (master switch)
+   - `external_model_url` — Textbox for base URL
+   - `external_model_api_key` — Textbox (password type)
+   - `external_model_timeout` — Number slider (10-300 seconds)
+   - `external_model_model` — Dropdown or Textbox for model name
+
+2. **Helper Functions:**
+   - `build_external_model_api_config()` — builds JSON config from UI inputs
+   - `toggle_external_model_settings()` — show/hide based on enable checkbox
+
+3. **Integration with process_url/process_file:**
+   - Pass `external_model_api` in `parameters["options"]`
+   - Use `build_picture_description_api_config()` from convert_options_extender
+
+**Data Flow:**
+```
+▶ UI: User configures external model
+→ ○ build_external_model_api_config() creates JSON
+→ ◇ Process functions receive API config
+→ ⊕ parameters["options"]["picture_description_api"] = api_config
+→ ⟦HTTP request to /v1/convert⟧
+```

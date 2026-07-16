@@ -1,0 +1,90 @@
+# Docling Serve Docker Compose Configuration
+# Usage: docker-compose up -d [--build]
+
+services:
+  # Docling Serve API
+  docling-serve:
+    build:
+      context: .
+      dockerfile: docling-serve/Dockerfile
+    container_name: docling-serve
+    ports:
+      - "5001:5001"
+    environment:
+      # Server settings
+      - DOCLING_SERVE_HOST=0.0.0.0
+      - DOCLING_SERVE_PORT=5001
+      - DOCLING_SERVE_ENABLE_UI=true
+      - DOCLING_SERVE_ENABLE_MANAGEMENT_ENDPOINTS=true
+      
+      # External model API (Ollama/vLLM)
+      - DOCLING_SERVE_EXTERNAL_MODEL_ENABLED=${EXTERNAL_MODEL_ENABLED:-false}
+      - DOCLING_SERVE_EXTERNAL_MODEL_BASE_URL=${EXTERNAL_MODEL_URL:-http://ollama:11434/v1}
+      - DOCLING_SERVE_EXTERNAL_MODEL_DEFAULT_MODEL=${EXTERNAL_MODEL_NAME:-llama3.2-vision}
+      - DOCLING_SERVE_EXTERNAL_MODEL_TIMEOUT=${EXTERNAL_MODEL_TIMEOUT:-60}
+      
+      # Async engine
+      - DOCLING_SERVE_ENG_KIND=local
+      - DOCLING_SERVE_ENG_LOC_NUM_WORKERS=2
+      
+      # Security (optional)
+      - DOCLING_SERVE_API_KEY=${DOCLING_SERVE_API_KEY:-}
+      
+      # Artifacts (optional)
+      - DOCLING_SERVE_ARTIFACTS_PATH=/data/artifacts
+    volumes:
+      - docling-data:/data
+      - docling-scratch:/tmp/docling-scratch
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    networks:
+      - docling-network
+
+  # Ollama service (optional external model provider)
+  # Uncomment to enable local Ollama
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: docling-ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama-data:/root/.ollama
+  #   restart: unless-stopped
+  #   networks:
+  #     - docling-network
+  #   # Pull model on startup (uncomment and modify as needed)
+  #   # command: pull llama3.2-vision
+
+  # Redis for RQ engine (optional)
+  # Uncomment if using DOCLING_SERVE_ENG_KIND=rq
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: docling-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - docling-network
+
+volumes:
+  docling-data:
+    driver: local
+  docling-scratch:
+    driver: local
+  ollama-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  docling-network:
+    driver: bridge
