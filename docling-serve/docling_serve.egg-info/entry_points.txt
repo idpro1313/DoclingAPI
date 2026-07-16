@@ -1,0 +1,2 @@
+[console_scripts]
+docling-serve = docling_serve.__main__:main
