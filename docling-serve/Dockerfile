@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv for faster package installation
 RUN pip install uv
 
-# Copy dependency files from docling-serve subdirectory
-COPY docling-serve/pyproject.toml docling-serve/uv.lock ./
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
 
 # Install dependencies
 RUN uv sync --frozen --no-install-project
@@ -46,8 +46,8 @@ RUN groupadd --gid 1000 docling && \
     useradd --uid 1000 --gid docling --shell /bin/bash --create-home docling
 USER docling
 
-# Copy application code from docling-serve subdirectory
-COPY --chown=docling:docling docling-serve/ ./docling_serve/
+# Copy application code
+COPY --chown=docling:docling . ./docling_serve/
 
 # Environment variables with defaults
 ENV DOCLING_SERVE_HOST=0.0.0.0
