@@ -15,14 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv for faster package installation
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}"
+RUN pip install uv
 
 # Copy dependency files from docling-serve subdirectory
 COPY docling-serve/pyproject.toml docling-serve/pyproject.lock* ./
 
 # Install dependencies
-RUN /root/.local/bin/uv sync --frozen --no-install-project
+RUN uv sync --frozen --no-install-project
 
 # ============================================
 # Stage 2: Runtime
