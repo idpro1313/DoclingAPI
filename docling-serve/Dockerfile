@@ -22,7 +22,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 COPY docling-serve/pyproject.toml docling-serve/pyproject.lock* ./
 
 # Install dependencies
-RUN uv sync --frozen --no-install-project
+RUN /root/.local/bin/uv sync --frozen --no-install-project
 
 # ============================================
 # Stage 2: Runtime
