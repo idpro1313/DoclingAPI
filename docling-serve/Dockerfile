@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install uv
 
 # Copy dependency files from docling-serve subdirectory
-COPY docling-serve/pyproject.toml docling-serve/pyproject.lock* ./
+COPY docling-serve/pyproject.toml docling-serve/uv.lock ./
 
 # Install dependencies
 RUN uv sync --frozen --no-install-project
