@@ -82,6 +82,12 @@ build_image() {
 run_container() {
     log_info "Starting container: ${CONTAINER_NAME}"
     
+    # Check if image exists, build if not
+    if ! docker image inspect "${IMAGE_NAME}:${IMAGE_TAG}" >/dev/null 2>&1; then
+        log_warn "Image not found locally, building..."
+        build_image
+    fi
+    
     # Stop and remove existing container if it exists
     if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
         log_warn "Removing existing container..."
