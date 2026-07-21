@@ -27,17 +27,24 @@ RUN --mount=type=cache,target=/root/.local \
 # Copy dependency files first (better caching)
 COPY pyproject.toml uv.lock ./
 
-# Copy source code
-COPY docling_serve/ ./docling_serve/
-
-# Create virtual environment and install everything
+# Create virtual environment
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 ENV UV_LINK_MODE=copy
 ENV UV_COMPILE_BYTECODE=1
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv venv /app/.venv && \
-    uv pip install --python /app/.venv/bin/python -r pyproject.toml && \
-    uv pip install --python /app/.venv/bin/python -e .
+    uv venv /app/.venv
+
+# Install dependencies (no project, just deps)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --python /app/.venv/bin/python -r pyproject.toml
+
+# Copy source code (changes often, invalidate deps cache last)
+COPY docling_serve/ ./docling_serve/
+
+# Re-sync to pick up the editable package install
+# Using --no-dev to match production
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --python /app/.venv/bin/python --frozen --no-dev --all-extras
 
 # ============================================
 # Stage 2: Runtime
@@ -53,7 +60,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy virtual environment from builder
+# Copy virtual environment from builder (includes docling_serve package)
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
