@@ -33,8 +33,3 @@ kilo.jsonc
 # Журнал агента (вести локально; см. agent-rules.mdc)
 docs/HISTORY.md
 
-# Вспомогательные артефакты агента (отчёты, черновики) — см. agent-rules.mdc §7
-work/*
-!work/README.md
-original/
-docling-serve-old/
