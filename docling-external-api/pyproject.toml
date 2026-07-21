@@ -1,0 +1,64 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "docling-external-api"
+version = "0.1.0"
+description = "External API plugin for docling-serve with OpenAI-compatible model support"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "DoclingAPI", email = "docling-api@example.com" }
+]
+keywords = [
+    "docling",
+    "document-conversion",
+    "ocr",
+    "vlm",
+    "external-api",
+    "openai-compatible",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+dependencies = [
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.4.0",
+    "httpx>=0.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<10.0.0",
+    "pytest-asyncio~=0.24",
+    "ruff>=0.9.6",
+    "mypy>=1.11",
+]
+
+[project.entry-points."docling"]
+docling_external_api = "docling_external_api.plugin"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W", "I", "UP", "ASYNC",
+]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+plugins = "pydantic.mypy"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
