@@ -43,10 +43,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Copy source code
 COPY docling_serve/ ./docling_serve/
 
-# Install the package (non-editable) to create valid entry points
+# Install the package (non-editable) with UI support
 # Editable install breaks in multi-stage builds due to symlink relocation
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /app/.venv/bin/python .
+    uv pip install --python /app/.venv/bin/python ".[ui]"
 
 # ============================================
 # Stage 2: Runtime
@@ -65,9 +65,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # Set Tesseract data path for OCR
 ENV TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
-
-# Offline mode - use locally cached models only
-ENV HF_HUB_OFFLINE=1
 
 # Copy virtual environment from builder (includes docling_serve package and entry points)
 COPY --from=builder /app/.venv /app/.venv
