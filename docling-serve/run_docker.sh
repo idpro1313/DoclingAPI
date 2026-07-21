@@ -7,6 +7,21 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Setup logging to /opt/logs
+LOG_DIR="/opt/logs"
+LOG_FILE="${LOG_DIR}/docling-serve-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p "${LOG_DIR}" 2>/dev/null || true
+
+log_step() { printf "\n%b===>%b %b%s%b\n" "${BOLD}${CYAN}" "${NC}" "${BOLD}" "$1" "${NC}"; }
+log_info() { printf "%b[INFO]%b %s\n" "${GREEN}" "${NC}" "$1"; }
+log_warn() { printf "%b[WARN]%b %s\n" "${YELLOW}" "${NC}" "$1"; }
+log_error() { printf "%b[ERROR]%b %s\n" "${RED}" "${NC}" "$1"; }
+log_success() { printf "%b[OK]%b %s\n" "${GREEN}" "${NC}" "$1"; }
+
+# Also log to file
+log_step_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') ===> $1" >> "${LOG_FILE}"; }
+log_info_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] $1" >> "${LOG_FILE}"; }
+
 IMAGE_NAME="docling-serve"
 IMAGE_TAG="latest"
 CONTAINER_NAME="docling-serve"
@@ -67,6 +82,7 @@ show_banner() {
 
 build_image() {
     log_step "Building Docker Image"
+    log_step_to_file "Building Docker Image"
 
     echo "  ${BLUE}Repository:${NC}   ${IMAGE_NAME}"
     echo "  ${BLUE}Tag:${NC}          ${IMAGE_TAG}"
@@ -74,6 +90,8 @@ build_image() {
     PROGRESS_MODE="$([ "$VERBOSE" = true ] && echo verbose || echo tty)"
     echo "  ${BLUE}Progress:${NC}     $PROGRESS_MODE"
     echo ""
+    log_info_to_file "Dockerfile:"
+    grep -v "^#" docling-serve/Dockerfile | grep -v "^$" >> "${LOG_FILE}" 2>/dev/null || true
 
     local start_time=$(date +%s)
 
@@ -83,25 +101,37 @@ build_image() {
             --progress=plain \
             -t "${IMAGE_NAME}:${IMAGE_TAG}" \
             -t "${IMAGE_NAME}:latest" \
-            .
+            . 2>&1 | tee -a "${LOG_FILE}"
     else
         DOCKER_BUILDKIT=1 docker build \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --progress=tty \
+            --progress=plain \
             -t "${IMAGE_NAME}:${IMAGE_TAG}" \
             -t "${IMAGE_NAME}:latest" \
-            .
+            . 2>&1 | tee -a "${LOG_FILE}"
     fi
 
+    local build_status=${PIPESTATUS[0]}
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
 
     echo ""
-    log_success "Image built in ${duration}s"
+    if [ $build_status -eq 0 ]; then
+        log_success "Image built in ${duration}s"
+        log_info_to_file "Build SUCCESS in ${duration}s"
+    else
+        log_error "Build FAILED after ${duration}s"
+        log_error "Check full log at: ${LOG_FILE}"
+        log_info_to_file "Build FAILED with status ${build_status}"
+        echo ""
+        echo "=== LAST 50 LINES OF LOG ==="
+        tail -50 "${LOG_FILE}"
+    fi
 
     # Show image size
     local size=$(docker images "${IMAGE_NAME}:${IMAGE_TAG}" --format "{{.Size}}")
     echo "  ${BLUE}Image size:${NC} $size"
+    log_info_to_file "Image size: $size"
 }
 
 pull_image() {
@@ -159,22 +189,30 @@ run_container() {
     DOCKER_CMD="${DOCKER_CMD} -v $(pwd)/data:/data -v $(pwd)/scratch:/tmp/docling-scratch -e DOCLING_SERVE_ENABLE_UI=true -d ${IMAGE_NAME}:${IMAGE_TAG}"
 
     # Run container
-    eval $DOCKER_CMD
+    eval $DOCKER_CMD 2>&1 | tee -a "${LOG_FILE}"
 
     echo ""
 
     # Wait for container to be healthy
     log_info "Waiting for container to start..."
+    log_info_to_file "Container started, checking status..."
+
     sleep 3
 
     # Check container status
     local status=$(docker inspect --format='{{.State.Status}}' "${CONTAINER_NAME}" 2>/dev/null || echo "unknown")
     echo "  ${BLUE}Status:${NC} $status"
+    log_info_to_file "Container status: $status"
 
     if [ "$status" = "running" ]; then
         log_success "Container is running"
+        log_info_to_file "Container is running"
     else
         log_error "Container failed to start. Check logs with: docker logs ${CONTAINER_NAME}"
+        log_error_to_file "Container failed to start"
+        echo ""
+        echo "=== CONTAINER LOGS ===" | tee -a "${LOG_FILE}"
+        docker logs "${CONTAINER_NAME}" 2>&1 | head -100 | tee -a "${LOG_FILE}"
     fi
 
     echo ""
@@ -225,5 +263,8 @@ run_container
 
 echo ""
 log_success "Done!"
+echo ""
+log_info "Full build log: ${LOG_FILE}"
+log_info_to_file "Script completed"
 echo ""
 show_help
