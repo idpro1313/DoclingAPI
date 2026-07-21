@@ -29,7 +29,7 @@ services:
     ports:
       - "5002:5002"
     environment:
-      - DOCLING_SERVE_URL=http://docling-serve:5001
+      - EXTERNAL_API_DOCLING_SERVE_URL=http://docling-serve:5001
       - EXTERNAL_API_PORT=5002
     depends_on:
       docling-serve:
