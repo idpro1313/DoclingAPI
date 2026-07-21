@@ -66,6 +66,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Set Tesseract data path for OCR
 ENV TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
 
+# Offline mode - use locally cached models only
+ENV HF_HUB_OFFLINE=1
+
 # Copy virtual environment from builder (includes docling_serve package and entry points)
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:${PATH}"
