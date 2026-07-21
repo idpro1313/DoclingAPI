@@ -66,16 +66,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Set Tesseract data path for OCR
 ENV TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
 
-# Copy only site-packages and bin (not the entire venv)
+# Copy only site-packages and necessary binaries (not the entire venv)
 # This reduces image size by ~15GB
 COPY --from=builder /app/.venv/lib/python3.12/site-packages /app/.venv/lib/python3.12/site-packages
 COPY --from=builder /app/.venv/bin/docling-serve /app/.venv/bin/docling-serve
-COPY --from=builder /app/.venv/bin/uv /app/.venv/bin/uv
-COPY --from=builder /app/.venv/bin/python /app/.venv/bin/python
+COPY --from=builder /app/.venv/bin/python3.12 /app/.venv/bin/python3.12
+COPY --from=builder /app/.venv/bin/python3 /app/.venv/bin/python3
 
-ENV PATH="/app/.venv/bin:${PATH}"
+# Setup environment
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PATH="/app/.venv/bin:${PATH}"
+ENV PYTHONPATH=/app/.venv/lib/python3.12/site-packages
 
 # Create non-root user for security
 RUN groupadd --gid 1000 docling && \
