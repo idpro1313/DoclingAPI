@@ -35,7 +35,7 @@ echo ""
 
 if [ "$BUILD" = true ]; then
     echo "[1/3] Building Docker images..."
-    docker compose build
+    docker compose build docling-external-api
 else
     echo "[1/3] Skipping build (use --build to rebuild)..."
 fi
