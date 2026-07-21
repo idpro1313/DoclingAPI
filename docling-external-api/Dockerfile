@@ -31,6 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV TESSDATA_PREFIX=/usr/share/tesseract/
 
+RUN mkdir -p /opt/app-root/src/.cache/uv && chown -R 1001:0 /opt/app-root/src/.cache
+
 
 FROM ${UV_IMAGE} AS uv_stage
 
