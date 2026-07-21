@@ -8,7 +8,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import certifi
 import gradio as gr
@@ -222,10 +222,10 @@ def build_external_model_api_config(
     external_model_api_key: str,
     external_model_timeout: float,
     external_model_model: str,
-) -> Optional[str]:
-    """Build picture_description_api JSON config from UI inputs.
+) -> Optional[dict]:
+    """Build picture_description_api config dict from UI inputs.
 
-    STRUCTURE: ⚡ [enable, url, api_key, timeout, model] → ○ validate → ◇ build JSON → ⎋ JSON string
+    STRUCTURE: ⚡ [enable, url, api_key, timeout, model] → ○ validate → ◇ build dict → ⎋ dict
     """
     if not enable_external_model:
         logger.debug("[IMP:4][build_external_model_api_config] External model disabled [FLOW]")
@@ -235,7 +235,7 @@ def build_external_model_api_config(
         logger.warning("[IMP:6][build_external_model_api_config] External model URL not provided [WARN]")
         return None
 
-    api_config = {
+    api_config: dict[str, Any] = {
         "url": external_model_url,
         "params": {
             "model": external_model_model if external_model_model else "auto",
@@ -251,7 +251,7 @@ def build_external_model_api_config(
         f"model={external_model_model} [STATUS]"
     )
 
-    return json.dumps(api_config)
+    return api_config
 
 
 def toggle_external_model_settings(enable: bool):
