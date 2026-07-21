@@ -48,12 +48,9 @@ COPY --chown=1001:0 ../docling-serve/uv.lock .
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv && \
-    uv sync --frozen --no-dev --no-install-project
+    uv sync --frozen --no-dev --no-install-project ".[ui]"
 
 COPY --chown=1001:0 ../docling-serve/docling_serve /app/docling_serve
-
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /app/.venv/bin/python ".[ui]"
 
 COPY --chown=1001:0 ../docling-external-api /app/docling-external-api
 
