@@ -52,8 +52,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY --chown=1001:0 ../docling-serve/docling_serve /app/docling_serve
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /app/.venv/bin/python ".[ui]" && \
-    uv pip install --python /app/.venv/bin/python /app/docling_serve
+    uv pip install --python /app/.venv/bin/python ".[ui]"
 
 COPY --chown=1001:0 ../docling-external-api/src/docling_external_api /app/docling_external_api
 
