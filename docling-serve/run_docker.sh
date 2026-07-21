@@ -91,7 +91,7 @@ build_image() {
     echo "  ${BLUE}Progress:${NC}     $PROGRESS_MODE"
     echo ""
     log_info_to_file "Dockerfile:"
-    grep -v "^#" docling-serve/Dockerfile | grep -v "^$" >> "${LOG_FILE}" 2>/dev/null || true
+    grep -v "^#" Dockerfile | grep -v "^$" >> "${LOG_FILE}" 2>/dev/null || true
 
     local start_time=$(date +%s)
 
