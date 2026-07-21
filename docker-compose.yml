@@ -11,7 +11,7 @@ services:
   docling-serve:
     build:
       context: ./docling-serve
-      dockerfile: Containerfile
+      dockerfile: Containerfile.cpu
     container_name: docling-serve
     ports:
       - "5001:5001"
