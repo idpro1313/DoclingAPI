@@ -43,7 +43,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Copy source code
 COPY docling_serve/ ./docling_serve/
 
-# Install the package (non-editable) with UI support
+# Install the package (non-editable) to create valid entry points
 # Editable install breaks in multi-stage builds due to symlink relocation
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --python /app/.venv/bin/python ".[ui]"
@@ -82,6 +82,7 @@ USER docling
 ENV DOCLING_SERVE_HOST=0.0.0.0
 ENV DOCLING_SERVE_PORT=5001
 ENV DOCLING_SERVE_ENABLE_UI=true
+ENV DOCLING_SERVE_LOAD_MODELS_AT_BOOT=false
 ENV DOCLING_SERVE_EXTERNAL_MODEL_ENABLED=false
 ENV DOCLING_SERVE_EXTERNAL_MODEL_TIMEOUT=60
 
