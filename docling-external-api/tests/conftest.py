@@ -1,40 +1,30 @@
-# region MODULE_CONTRACT [DOMAIN(5): Testing; CONCEPT(4): Pytest, Fixtures; TECH(7): pytest]
-## @modulecontract
-## @purpose pytest configuration for docling-external-api tests.
-## @scope Session fixtures, logging setup, attempt counter for Anti-Loop.
-## @changes
-## LAST_CHANGE: v0.1.0 - Initial creation
-def _module_contract():
-    pass
-# endregion MODULE_CONTRACT
-# GREP_SUMMARY: pytest, conftest, testing, fixtures, session, configuration
+"""Pytest configuration and fixtures for docling-external-api tests."""
+
+from __future__ import annotations
 
 import logging
+import os
 import sys
 from pathlib import Path
 
 import pytest
 
+src_path = Path(__file__).parent.parent / "src"
+sys.path.insert(0, str(src_path))
+
 logging.basicConfig(
     level=logging.DEBUG,
-    format="%(asctime)s [%(levelname)8s] %(name)s:%(lineno)d %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
+    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
 )
 
-_log = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="session")
-def test_data_dir(tmp_path_factory) -> Path:
-    """Create temporary directory for test data."""
-    return tmp_path_factory.mktemp("test_data")
+os.environ.setdefault("DOCLING_SERVE_URL", "http://localhost:5001")
+os.environ.setdefault("EXTERNAL_API_PORT", "5002")
 
 
 @pytest.fixture(autouse=True)
-def reset_logging():
-    """Ensure clean logging state for each test."""
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-    logging.root.setLevel(logging.WARNING)
+def reset_config():
+    """Reset config singleton between tests."""
+    import docling_external_api.config as config_module
+    config_module._config_instance = None
     yield
-    logging.root.setLevel(logging.WARNING)
+    config_module._config_instance = None

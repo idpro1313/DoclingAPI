@@ -1,75 +1,97 @@
-# Test Guide: docling-external-api Plugin
+# Test Guide: docling-external-api
+
+**VERSION:** 0.3.0
+**UPDATED:** 2026-07-21
+
+---
 
 ## Overview
 
-Plugin for connecting external OpenAI-compatible APIs to docling-serve for VLM, OCR, Table Structure, Picture Description, and Layout models.
+Standalone service tests for `docling-external-api` - a FastAPI service that proxies requests to `docling-serve` and optionally enriches results with external VLM APIs.
+
+---
+
+## Architecture Under Test
+
+```
+Client → docling-external-api (port 5002) → docling-serve (port 5001)
+                    ↓
+              External VLM API
+```
+
+---
 
 ## Test Files
 
-| File | Description | Coverage |
-|------|-------------|----------|
-| `test_config.py` | ExternalApiConfig class tests | 8 tests |
-| `test_integration.py` | Integration and plugin tests | 7 tests |
+| File | Purpose | Key Tests |
+|------|---------|-----------|
+| `test_config.py` | ExternalApiConfig settings | docling_serve_url, api_port, get_config singleton |
+| `test_models.py` | Pydantic request/response | SourceItem, ConvertSourceRequest, HealthResponse |
+| `test_proxy.py` | HTTP proxy logic | convert_document, health_check with mocks |
+| `test_vlm_handler.py` | VLM processing | extract_pages, call_vlm, process_with_vlm |
+
+---
 
 ## Running Tests
 
 ```bash
 cd docling-external-api
-python -m pytest tests/ -v -s
+uv sync --dev
+uv run pytest tests/ -v
 ```
 
-## Test Data Requirements
+---
 
-No external test data required. Tests use:
-- Environment variable mocking (`monkeypatch`)
-- In-memory configuration objects
+## Test Data
 
-## Expected Log Markers (LDD)
+| Test Case | Input | Expected Output |
+|-----------|-------|-----------------|
+| `test_docling_serve_url_config` | Default config | `http://localhost:5001` |
+| `test_convert_source_request` | Sources array | Valid ConvertSourceRequest |
+| `test_health_response` | All fields | HealthResponse with status |
+| `test_extract_pages_from_pages` | `{"pages": [...]}` | List of pages |
+| `test_call_vlm_success` | Mock httpx response | VLM response dict |
 
-### IMP:7-10 Markers to Verify
+---
 
-**config.py tests:**
-```
-[IMP:5] [ExternalApiConfig][VALIDATE] Engine enabled but no base_url configured
-[IMP:7] [ExternalApiConfig][GET_VLM_PRESET] Creating VLM preset for model=
-[IMP:7] [ExternalApiConfig][GET_ALL_PRESETS] Generated presets for engines:
-```
+## Critical Log Markers (LDD)
 
-**integration.py tests:**
-```
-[IMP:4] [test_setup_external_api_no_config][PASS] Empty config returns empty dict OK
-[IMP:6] [test_setup_external_api_vlm_only][PASS] VLM only setup OK
-[IMP:6] [test_setup_external_api_multiple_engines][PASS] Multiple engines setup OK
-[IMP:5] [test_setup_external_api_auto_load][PASS] Auto-load from env OK
-[IMP:4] [test_register_plugin][PASS] Plugin registration OK
-[IMP:5] [test_preset_contains_required_fields][PASS] Required fields OK
-```
+Tests verify these log markers are present:
 
-## Verification Queries
+- `[IMP:6]` - Configuration loading
+- `[IMP:7]` - HTTP requests/responses
+- `[IMP:8]` - VLM API calls
+- `[IMP:9]` - Error handling
 
-### Check config loads from env
-```python
-import os
-os.environ["EXTERNAL_API_VLM_ENABLED"] = "1"
-os.environ["EXTERNAL_API_VLM_BASE_URL"] = "https://api.openai.com/v1"
-config = ExternalApiConfig()
-assert config.vlm_enabled == True
-```
+---
 
-### Check preset structure
-```python
-config = ExternalApiConfig(vlm_enabled=True, vlm_base_url="https://api.openai.com/v1", vlm_api_key="sk-test")
-result = setup_external_api(config)
-assert "custom_vlm_presets" in result
-assert "external_api_vlm" in result["custom_vlm_presets"]
-preset = result["custom_vlm_presets"]["external_api_vlm"]
-assert preset["url"] == "https://api.openai.com/v1/chat/completions"
+## Mock Strategy
+
+- `httpx.AsyncClient` - mocked for all HTTP calls
+- `get_config()` - mocked to return test config
+- No real network calls in tests
+
+---
+
+## Docker Compose for Manual Testing
+
+```bash
+cd docling-external-api
+docker compose up --build
+curl http://localhost:5002/health
+curl -X POST http://localhost:5002/v1/convert/source \
+  -H "Content-Type: application/json" \
+  -d '{"sources": [{"kind": "url", "uri": "https://example.com/doc.pdf"}]}'
 ```
 
-## Acceptance Criteria
+---
 
-- [ ] All 15 tests pass
-- [ ] LDD logs with IMP:7-10 are visible in test output
-- [ ] Plugin entry point `docling_external_api.plugin:plugin` is registered in pyproject.toml
-- [ ] No hardcoded paths in tests
-- [ ] Semantic markup (# region / # endregion) present in all source files
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DOCLING_SERVE_URL` | `http://localhost:5001` | URL to docling-serve |
+| `EXTERNAL_API_PORT` | `5002` | Port for this service |
+| `EXTERNAL_API_VLM_ENABLED` | `0` | Enable VLM processing |
+| `EXTERNAL_API_VLM_BASE_URL` | - | VLM API URL |
+| `EXTERNAL_API_VLM_MODEL` | `gpt-4o` | VLM model name |
