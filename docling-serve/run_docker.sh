@@ -12,12 +12,20 @@ LOG_DIR="/opt/logs"
 LOG_FILE="${LOG_DIR}/docling-serve-$(date +%Y%m%d-%H%M%S).log"
 mkdir -p "${LOG_DIR}" 2>/dev/null || true
 
-# Plain text logging (no ANSI for Windows/PowerShell compatibility)
-log_step() { printf "\n===> %s\n\n" "$1"; }
-log_info() { printf "[INFO] %s\n" "$1"; }
-log_warn() { printf "[WARN] %s\n" "$1"; }
-log_error() { printf "[ERROR] %s\n" "$1"; }
-log_success() { printf "[OK] %s\n" "$1"; }
+# ANSI colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Logging functions
+log_step() { printf "\n${BOLD}${CYAN}===>${NC} %s${NC}\n\n" "$1"; }
+log_info() { printf "${GREEN}[INFO]${NC} %s\n" "$1"; }
+log_warn() { printf "${YELLOW}[WARN]${NC} %s\n" "$1"; }
+log_error() { printf "${RED}[ERROR]${NC} %s\n" "$1"; }
+log_success() { printf "${GREEN}[OK]${NC} %s\n" "$1"; }
 
 log_step_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') ===> $1" >> "${LOG_FILE}"; }
 log_info_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] $1" >> "${LOG_FILE}"; }
@@ -39,6 +47,7 @@ BUILD_OPTIMIZED=false
 RUN_CONTAINER=true
 VERBOSE=false
 CLEAR_CACHE=false
+NO_CACHE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -46,12 +55,14 @@ while [[ $# -gt 0 ]]; do
         --optimized) BUILD=true; BUILD_OPTIMIZED=true; shift ;;
         --verbose) VERBOSE=true; shift ;;
         --clear-cache) CLEAR_CACHE=true; shift ;;
+        --no-cache) NO_CACHE=true; shift ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo "  --build           Rebuild Docker image"
             echo "  --optimized       Build using Dockerfile.optimized (~5GB)"
             echo "  --verbose         Verbose build output"
             echo "  --clear-cache     Clear BuildKit cache before building"
+            echo "  --no-cache        Build without using cache"
             echo ""
             echo "Example:"
             echo "  ./run_docker.sh --optimized"
@@ -87,10 +98,14 @@ build_image() {
     echo ""
 
     local start_time=$(date +%s)
+    local build_cmd="docker build"
 
-    DOCKER_BUILDKIT=1 docker build \
+    if [ "$NO_CACHE" = true ]; then
+        build_cmd="$build_cmd --no-cache"
+    fi
+
+    $build_cmd \
         --build-arg BUILDKIT_INLINE_CACHE=1 \
-        --mount=type=cache,target=/root/.cache/buildkit,sharing=locked \
         --progress="${PROGRESS_MODE}" \
         -t "${IMAGE_NAME}:${IMAGE_TAG}" \
         -t "${IMAGE_NAME}:latest" \
@@ -118,12 +133,16 @@ build_optimized() {
     echo ""
 
     local start_time=$(date +%s)
+    local build_cmd="docker build"
 
-    DOCKER_BUILDKIT=1 docker build \
+    if [ "$NO_CACHE" = true ]; then
+        build_cmd="$build_cmd --no-cache"
+    fi
+
+    $build_cmd \
         --build-arg BUILDKIT_INLINE_CACHE=1 \
-        --mount=type=cache,target=/root/.cache/buildkit,sharing=locked \
         -f Dockerfile.optimized \
-        --progress=tty \
+        --progress=plain \
         -t "${IMAGE_NAME}:${IMAGE_TAG}" \
         -t "${IMAGE_NAME}:latest" \
         -t "${IMAGE_NAME}:optimized" \
