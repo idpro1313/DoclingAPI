@@ -89,15 +89,7 @@ build_image() {
             --progress=tty \
             -t "${IMAGE_NAME}:${IMAGE_TAG}" \
             -t "${IMAGE_NAME}:latest" \
-            . 2>&1 | while IFS= read -r line; do
-                if [[ "$line" =~ ^#[[:space:]]([0-9]+)\/([[:space:]]([0-9]+))? ]]; then
-                    # Stage progress
-                    echo -ne "\r  ${YELLOW}Building...${NC} $line    "
-                elif [[ "$line" =~ ^ => ]] && [[ "$line" =~ (CACHED|STEP|Successfully) ]]; then
-                    echo ""
-                    echo -e "  ${GREEN}$line${NC}"
-                fi
-            done
+            .
     fi
 
     local end_time=$(date +%s)
@@ -144,21 +136,13 @@ run_container() {
     fi
 
     # Build docker run command
-    DOCKER_CMD="docker run \
-        --name ${CONTAINER_NAME} \
-        --restart unless-stopped \
-        -p ${PORT}:${PORT} \
-        --memory=8g \
-        --cpus=4"
+    DOCKER_CMD="docker run --name ${CONTAINER_NAME} --restart unless-stopped -p ${PORT}:${PORT} --memory=8g --cpus=4"
 
     # External model settings
     if [ "$EXTERNAL_MODEL" = true ] || [ "$EXTERNAL_MODEL_ENABLED" = "true" ]; then
         log_info "External model API enabled"
         echo -e "  ${BLUE}Model URL:${NC} ${EXTERNAL_MODEL_URL}"
-        DOCKER_CMD="${DOCKER_CMD}
-        -e DOCLING_SERVE_EXTERNAL_MODEL_ENABLED=true
-        -e DOCLING_SERVE_EXTERNAL_MODEL_BASE_URL=${EXTERNAL_MODEL_URL}
-        -e DOCLING_SERVE_EXTERNAL_MODEL_TIMEOUT=${EXTERNAL_MODEL_TIMEOUT}"
+        DOCKER_CMD="${DOCKER_CMD} -e DOCLING_SERVE_EXTERNAL_MODEL_ENABLED=true -e DOCLING_SERVE_EXTERNAL_MODEL_BASE_URL=${EXTERNAL_MODEL_URL} -e DOCLING_SERVE_EXTERNAL_MODEL_TIMEOUT=${EXTERNAL_MODEL_TIMEOUT}"
     fi
 
     # API key
@@ -167,14 +151,10 @@ run_container() {
     fi
 
     # Volumes and UI
-    DOCKER_CMD="${DOCKER_CMD}
-        -v $(pwd)/data:/data
-        -v $(pwd)/scratch:/tmp/docling-scratch
-        -e DOCLING_SERVE_ENABLE_UI=true
-        -d ${IMAGE_NAME}:${IMAGE_TAG}"
+    DOCKER_CMD="${DOCKER_CMD} -v $(pwd)/data:/data -v $(pwd)/scratch:/tmp/docling-scratch -e DOCLING_SERVE_ENABLE_UI=true -d ${IMAGE_NAME}:${IMAGE_TAG}"
 
-    # Run container (parse multi-line command)
-    eval $(echo "$DOCKER_CMD" | tr '\n' ' ')
+    # Run container
+    eval $DOCKER_CMD
 
     echo ""
 
