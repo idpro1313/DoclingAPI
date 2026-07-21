@@ -50,8 +50,11 @@ echo "[1/4] Cleaning up existing container..."
 docker stop "$CONTAINER_NAME" 2>/dev/null || true
 docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
-# Build image if requested
+# Create symlinks for Dockerfile bind mounts (looks in project root, not subdirs)
 if [ "$BUILD" = true ]; then
+    echo "[1.5/4] Creating symlinks for build context..."
+    ln -sf docling-serve/uv.lock "$PROJECT_DIR/uv.lock" 2>/dev/null || true
+    ln -sf docling-serve/pyproject.toml "$PROJECT_DIR/pyproject.toml" 2>/dev/null || true
     echo "[2/4] Building Docker image..."
     docker build -t "$IMAGE_NAME" -f "$SCRIPT_DIR/Dockerfile" "$PROJECT_DIR"
 else
