@@ -293,6 +293,43 @@
   </storage_py>
 
   <!-- ============================================= -->
+  <!-- DOCKER DEPLOYMENT -->
+  <!-- ============================================= -->
+
+  <!-- Dockerfile — Multi-stage build -->
+  <Dockerfile_FILE FILE="docling-serve/Dockerfile" TYPE="DOCKERFILE">
+    <annotation>Multi-stage Docker build: builder (uv sync) → runtime (copy venv). BuildKit cache mounts.</annotation>
+    <builder_STAGE NAME="builder" TYPE="BUILD_STAGE">
+      <annotation>Устанавливает зависимости через uv sync, копирует source code.</annotation>
+    </builder_STAGE>
+    <runtime_STAGE NAME="runtime" TYPE="BUILD_STAGE">
+      <annotation>Копирует venv, создаёт non-root user, запускает docling-serve run.</annotation>
+    </runtime_STAGE>
+  </Dockerfile_FILE>
+
+  <!-- run_docker.sh — Launcher script -->
+  <run_docker_sh_FILE FILE="docling-serve/run_docker.sh" TYPE="LAUNCHER_SCRIPT">
+    <annotation>Интерактивный скрипт для сборки и запуска Docker контейнера.</annotation>
+    <build_image_FUNC NAME="build_image" TYPE="SCRIPT_FUNCTION">
+      <annotation>Собирает Docker образ с BuildKit и прогресс-индикацией.</annotation>
+    </build_image_FUNC>
+    <run_container_FUNC NAME="run_container" TYPE="SCRIPT_FUNCTION">
+      <annotation>Запускает контейнер с volumes и environment variables.</annotation>
+    </run_container_FUNC>
+  </run_docker_sh_FILE>
+
+  <!-- docker-compose.yml — Local development -->
+  <docker_compose_yml_FILE FILE="docling-serve/docker-compose.yml" TYPE="COMPOSE_FILE">
+    <annotation>Compose файл для локальной разработки с Ollama.</annotation>
+    <docling_Service NAME="docling" TYPE="SERVICE">
+      <annotation>Основной сервис Docling API.</annotation>
+    </docling_Service>
+    <ollama_Service NAME="ollama" TYPE="SERVICE">
+      <annotation>Локальный Ollama для external model API.</annotation>
+    </ollama_Service>
+  </docker_compose_yml_FILE>
+
+  <!-- ============================================= -->
   <!-- INFRASTRUCTURE MODULES -->
   <!-- ============================================= -->
 
