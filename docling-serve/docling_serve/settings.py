@@ -326,10 +326,10 @@ class DoclingServeSettings(BaseSettings):
 
     # === External Model API Configuration (vLLM, Ollama, OpenAI-compatible) ===
     external_model_enabled: bool = False
-    external_model_base_url: str = ""
-    external_model_api_key: str = ""
+    external_model_base_url: Optional[str] = None
+    external_model_api_key: Optional[str] = None
     external_model_timeout: float = 60.0
-    external_model_default_model: str = ""
+    external_model_default_model: Optional[str] = None
 
     # === DoclingConverterManagerConfig Parameters ===
     # TODO: Don't overwrite the default of docling-jobkit. This requires first some restructure in jobkit.
