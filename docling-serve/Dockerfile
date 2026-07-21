@@ -43,10 +43,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Copy source code
 COPY docling_serve/ ./docling_serve/
 
-# Explicitly install the package in editable mode to create entry points
-# This ensures docling-serve console script is available
+# Install the package (non-editable) to create valid entry points
+# Editable install breaks in multi-stage builds due to symlink relocation
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /app/.venv/bin/python -e .
+    uv pip install --python /app/.venv/bin/python .
 
 # ============================================
 # Stage 2: Runtime
