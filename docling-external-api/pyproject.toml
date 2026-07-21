@@ -6,7 +6,6 @@ build-backend = "hatchling.build"
 name = "docling-external-api"
 version = "0.3.0"
 description = "Standalone service for external API integration with docling-serve"
-readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
