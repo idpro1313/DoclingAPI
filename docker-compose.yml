@@ -1,0 +1,43 @@
+# Docker Compose for docling-serve with Hybrid VLM Integration
+#
+# Architecture:
+# - MiniMax M2.7 (http://192.168.101.15:8111) for OCR, Layout, Table
+# - DeepSeek-OCR-2 (https://foundation-models.api.cloud.ru) for Picture Description
+#
+# Usage:
+#   docker compose up --build
+
+services:
+  docling-serve:
+    build:
+      context: ./docling-serve
+      dockerfile: Containerfile
+    container_name: docling-serve
+    ports:
+      - "5001:5001"
+    environment:
+      - DOCLING_SERVE_LOAD_MODELS_AT_BOOT=false
+      - DOCLING_SERVE_ENABLE_UI=true
+      - DOCLING_SERVE_ENABLE_REMOTE_SERVICES=true
+
+      # MiniMax M2.7 для OCR/Layout/Table
+      - DOCLING_SERVE_ALLOW_CUSTOM_VLM_CONFIG=true
+      - DOCLING_SERVE_DEFAULT_VLM_PRESET=minimax_m27
+      - 'DOCLING_SERVE_CUSTOM_VLM_PRESETS={"presets":{"minimax_m27":{"engine":"openai","url":"http://192.168.101.15:8111/v1","model":"minimax-m2.7","max_tokens":4096,"temperature":0.0}}}'
+
+      # DeepSeek-OCR-2 для Picture Description
+      - DOCLING_SERVE_ALLOW_CUSTOM_PICTURE_DESCRIPTION_CONFIG=true
+      - DOCLING_SERVE_DEFAULT_PICTURE_DESCRIPTION_PRESET=deepseek_ocr
+      - 'DOCLING_SERVE_CUSTOM_PICTURE_DESCRIPTION_PRESETS={"presets":{"deepseek_ocr":{"engine":"openai","url":"https://foundation-models.api.cloud.ru/v1","api_key":"N2Y2MWJkMjAtNGE5OC00MjMwLWI2MTMtNGE4Y2E2OWIzMjU2.dc8bb7f1049fc3b9eb66e5a73740f0e6","model":"deepseek-ai/DeepSeek-OCR-2","max_tokens":4096,"temperature":0.0}}}'
+
+    volumes:
+      - docling-models:/app/.cache/docling/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  docling-models:

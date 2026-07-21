@@ -1,1 +1,0 @@
-"""Tests for docling-external-api plugin."""
