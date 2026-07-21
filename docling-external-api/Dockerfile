@@ -47,10 +47,8 @@ COPY --chown=1001:0 ../docling-serve/uv.lock .
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv && \
-    uv sync --frozen --no-dev --no-install-project --no-extra flash-attn && \
-    uv pip install --python /app/.venv/bin/python torch && \
-    FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE \
-    uv sync --frozen --no-dev --no-install-project --no-build-isolation-package=flash-attn
+    uv pip install --python /app/.venv/bin/python torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+    uv sync --frozen --no-dev --no-install-project --all-extras --no-extra flash-attn
 
 COPY --chown=1001:0 ../docling-serve/docling_serve /app/docling_serve
 
