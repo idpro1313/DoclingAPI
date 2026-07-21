@@ -1,65 +1,80 @@
-# Шаблон проекта Grace 2.0
+# docling-external-api
 
-Стартовый каркас для AI-разработки по **KiloCode Prompt Framework 2.0.0** (ветка Grace 2.0).  
-Источник фреймворка: папка [`Grace 2.0`](../Grace%202.0) в этом workspace.  
-Пакет **grace-dev-compilation (GRACE 1.0)** в этом шаблоне **не используется**.
+External API Plugin for docling-serve with OpenAI-compatible model support.
 
-## Что внутри
+## Overview
 
-| Путь | Назначение |
-|------|------------|
-| [`.kilocode/`](.kilocode/) | Kilo Code: `rules/rules.md`, 8 skills в `skill/`, `agents/`, `mcp.json` |
-| [`.cursor/`](.cursor/) | Cursor: те же 8 skills в `skills/`, правила в `rules/grace-2-framework.mdc`, `agents/` |
-| `kilo.json`, `kilo.jsonc` | Права Kilo CLI и `instructions`; **локально**, в `.gitignore` |
-| `Doxyfile` | Doxygen (`INPUT`, XML в `doxygen_output/`); **локально**, в `.gitignore` |
-| `Prompts.xml` | Мета-карта фреймворка (skills ↔ rules); **локально**, в `.gitignore` |
-| [`docs/`](docs/) | `README.md`, `HISTORY.md`, гайды |
-| [`plans/`](plans/) | Карта агента: `DevelopmentPlan.md`, `AppGraph.xml` |
-| [`VERSION`](VERSION) | SemVer для коммитов |
-| `.cursor/rules/agent-rules.mdc` | Навигация и ops для агента (§2 — без корневого `AGENTS.md`) |
-| `.cursor/rules/agent-rules.mdc` | Ops: журнал, git, среда (дополняет Grace 2) |
-| [`plans/`](plans/) | Сюда Architect создаёт `DevelopmentPlan.md`, `business_requirements.md` |
-| [`tests/`](tests/) | Централизованные тесты; для QA нужен `tests/test_guide.md` |
-| [`src/`](src/) | Исходный код приложения |
+This plugin allows connecting external OpenAI-compatible APIs (OpenAI, Azure OpenAI, vLLM, Ollama, LM Studio, etc.) to docling-serve for:
 
-## Быстрый старт
+- **VLM** (Vision-Language Models) - Document page analysis
+- **OCR** (Optical Character Recognition) - Text recognition
+- **Table Structure** - Table detection and structure recognition
+- **Picture Description** - Image description and captioning
+- **Layout** - Document layout analysis
 
-1. Скопируйте всю папку `_template 2.0` в каталог нового проекта (или переименуйте в корень репозитория).
-2. Откройте проект в **Cursor** или **Kilo Code**.
-3. Начните **новую сессию** агента, чтобы подхватились rules/skills.
-4. Дайте задачу на разработку — агент должен войти в фазу **Architect**: `skill(mode-architect)` / skill `mode-architect`.
-5. После утверждения плана — `mode-code` → при сбоях `mode-debug` → `mode-qa` (когда есть `tests/test_guide.md`).
+## Installation
 
-## Workflow (Grace 2.0)
-
-```text
-Новая задача → mode-architect → (утверждённый план) → mode-code
-  → при ошибках mode-debug → mode-qa
+```bash
+pip install docling-external-api
 ```
 
-Обязательно вызывать skill соответствующей фазы; иначе **CRITICAL_RULE_VIOLATION** (см. `.kilocode/rules/rules.md`).
+## Configuration
 
-## Kilo Code vs Cursor
+### Environment Variables
 
-| | Kilo Code | Cursor |
-|--|-----------|--------|
-| Rules | `.kilocode/rules/rules.md`, `agent-rules.md` | `.cursor/rules/grace-2-framework.mdc`, `agent-rules.mdc` |
-| Skills | `.kilocode/skill/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` |
-| Субагент | `.kilocode/agents/grok_searcher.md` | `.cursor/agents/grok_searcher.md` |
-| Конфиг | `kilo.json` + опц. `kilo.jsonc` | встроенная загрузка `.cursor/` |
+```bash
+# VLM Configuration
+export EXTERNAL_API_VLM_ENABLED=1
+export EXTERNAL_API_VLM_BASE_URL=https://api.openai.com/v1
+export EXTERNAL_API_VLM_API_KEY=sk-your-api-key
+export EXTERNAL_API_VLM_MODEL=gpt-4o
 
-Имена skills одинаковые: `mode-architect`, `mode-code`, `mode-debug`, `mode-qa`, `graph-protocol`, `devplan-protocol`, `document-protocol`, `data-transform`.
+# OCR Configuration (optional)
+export EXTERNAL_API_OCR_ENABLED=1
+export EXTERNAL_API_OCR_BASE_URL=https://api.openai.com/v1
+export EXTERNAL_API_OCR_API_KEY=sk-your-api-key
 
-## Субагент grok_searcher
+# Table Structure Configuration (optional)
+export EXTERNAL_API_TABLE_ENABLED=1
+export EXTERNAL_API_TABLE_BASE_URL=https://api.openai.com/v1
+export EXTERNAL_API_TABLE_API_KEY=sk-your-api-key
+```
 
-Гайд: [`docs/subagent_setup_guide.md`](docs/subagent_setup_guide.md).  
-Профиль лежит в `.kilocode/agents/` и `.cursor/agents/`.  
-Документ также упоминает `.kilo/agents/` — создайте эту папку при использовании **Kilo CLI**, если `task()` не видит профиль в `.kilocode/agents/`.
+### Python API
 
-## Отличие от GRACE 1.0
+```python
+from docling_external_api import setup_external_api, ExternalApiConfig
 
-- Нет `$grace-init`, нет `docs/*.xml`, нет `START_*` как канона кода.
-- План: markdown в `plans/`, граф: `AppGraph.xml` / draft в плане.
-- Разметка кода: `# region` + Doxygen + `GREP_SUMMARY` / `STRUCTURE`.
+# Option 1: From environment
+preset_config = setup_external_api()
 
-Сравнение с GRACE 1.0: см. план `grace_2.0_vs_dev-compilation` в workspace Cursor (если есть).
+# Option 2: Explicit configuration
+config = ExternalApiConfig(
+    vlm_enabled=True,
+    vlm_base_url="https://api.openai.com/v1",
+    vlm_api_key="sk-...",
+    vlm_model="gpt-4o"
+)
+preset_config = setup_external_api(config)
+
+# Use preset_config in DoclingConverterManagerConfig
+```
+
+## Usage with docling-serve
+
+```python
+from docling_serve.settings import DoclingServeSettings
+from docling_external_api import setup_external_api
+
+# Load external API configuration
+preset_config = setup_external_api()
+
+# Apply to docling-serve settings
+if preset_config:
+    for key, value in preset_config.items():
+        setattr(DoclingServeSettings(), key, value)
+```
+
+## License
+
+MIT

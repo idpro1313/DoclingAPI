@@ -65,4 +65,4 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/docling_external_api"]
+packages = ["docling_external_api"]

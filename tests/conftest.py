@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-src_path = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(src_path))
+package_path = Path(__file__).parent.parent / "docling_external_api"
+sys.path.insert(0, str(package_path))
 
 logging.basicConfig(
     level=logging.DEBUG,

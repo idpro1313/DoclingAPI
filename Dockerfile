@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv && \
     uv sync --no-dev
 
-COPY src/ ./src/
+COPY docling_external_api/ ./docling_external_api/
 
 ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
