@@ -34,15 +34,7 @@ echo "Detach: $DETACH"
 echo ""
 
 if [ "$BUILD" = true ]; then
-    echo "[1/3] Creating uv.lock if needed..."
-    if [ ! -f docling-external-api/uv.lock ]; then
-        echo "No uv.lock found, generating..."
-        cd docling-external-api
-        uv lock 2>/dev/null || echo "uv not available, Dockerfile will generate lock"
-        cd ..
-    fi
-
-    echo "[2/3] Building Docker images..."
+    echo "[1/3] Building Docker images..."
     docker compose build --no-cache docling-external-api
 else
     echo "[1/3] Skipping build (use --build to rebuild)..."

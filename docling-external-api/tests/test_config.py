@@ -10,7 +10,7 @@ def _module_contract():
 
 import pytest
 
-from docling_external_api.config import ExternalApiConfig, get_config
+from src.config import ExternalApiConfig, get_config
 
 
 # region FUNC_test_docling_serve_url_config [DOMAIN(5): Testing; CONCEPT(6): Config; TECH(7): pytest]

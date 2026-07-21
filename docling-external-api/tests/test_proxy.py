@@ -11,7 +11,7 @@ def _module_contract():
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
-from docling_external_api.proxy import convert_document, health_check
+from src.proxy import convert_document, health_check
 
 
 # region FUNC_test_convert_document_success [DOMAIN(5): Testing; CONCEPT(6): Proxy; TECH(8): pytest]
@@ -31,12 +31,12 @@ async def test_convert_document_success():
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
 
-    with patch("docling_external_api.proxy.get_config") as mock_get_config:
+    with patch("src.proxy.get_config") as mock_get_config:
         mock_config = MagicMock()
         mock_config.docling_serve_url = "http://localhost:5001"
         mock_get_config.return_value = mock_config
 
-        with patch("docling_external_api.proxy.httpx.AsyncClient", return_value=mock_client):
+        with patch("src.proxy.httpx.AsyncClient", return_value=mock_client):
             result = await convert_document({"sources": [{"kind": "url", "uri": "test.pdf"}]})
 
     assert result["status"] == "success"
@@ -63,12 +63,12 @@ async def test_convert_document_with_timeout():
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
 
-    with patch("docling_external_api.proxy.get_config") as mock_get_config:
+    with patch("src.proxy.get_config") as mock_get_config:
         mock_config = MagicMock()
         mock_config.docling_serve_url = "http://localhost:5001"
         mock_get_config.return_value = mock_config
 
-        with patch("docling_external_api.proxy.httpx.AsyncClient", return_value=mock_client):
+        with patch("src.proxy.httpx.AsyncClient", return_value=mock_client):
             await convert_document({"sources": [], "timeout": 60.0, "max_num_images": 5})
 
             mock_client.post.assert_called_once()
@@ -94,12 +94,12 @@ async def test_health_check_healthy():
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
 
-    with patch("docling_external_api.proxy.get_config") as mock_get_config:
+    with patch("src.proxy.get_config") as mock_get_config:
         mock_config = MagicMock()
         mock_config.docling_serve_url = "http://localhost:5001"
         mock_get_config.return_value = mock_config
 
-        with patch("docling_external_api.proxy.httpx.AsyncClient", return_value=mock_client):
+        with patch("src.proxy.httpx.AsyncClient", return_value=mock_client):
             result = await health_check()
 
     assert result is True
@@ -120,12 +120,12 @@ async def test_health_check_unhealthy():
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
 
-    with patch("docling_external_api.proxy.get_config") as mock_get_config:
+    with patch("src.proxy.get_config") as mock_get_config:
         mock_config = MagicMock()
         mock_config.docling_serve_url = "http://localhost:5001"
         mock_get_config.return_value = mock_config
 
-        with patch("docling_external_api.proxy.httpx.AsyncClient", return_value=mock_client):
+        with patch("src.proxy.httpx.AsyncClient", return_value=mock_client):
             result = await health_check()
 
     assert result is False
@@ -151,12 +151,12 @@ async def test_health_check_http_error():
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
 
-    with patch("docling_external_api.proxy.get_config") as mock_get_config:
+    with patch("src.proxy.get_config") as mock_get_config:
         mock_config = MagicMock()
         mock_config.docling_serve_url = "http://localhost:5001"
         mock_get_config.return_value = mock_config
 
-        with patch("docling_external_api.proxy.httpx.AsyncClient", return_value=mock_client):
+        with patch("src.proxy.httpx.AsyncClient", return_value=mock_client):
             result = await health_check()
 
     assert result is False

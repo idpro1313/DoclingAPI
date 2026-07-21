@@ -11,14 +11,14 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from docling_external_api.config import get_config
-from docling_external_api.models import (
+from src.config import get_config
+from src.models import (
     ConvertSourceRequest,
     ConvertSourceResponse,
     HealthResponse,
 )
-from docling_external_api.proxy import convert_document, health_check as check_downstream
-from docling_external_api.vlm_handler import process_with_vlm
+from src.proxy import convert_document, health_check as check_downstream
+from src.vlm_handler import process_with_vlm
 
 _log = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ def main():
     _log.info(f"[IMP:6][main][START] Starting server on port {config.api_port}")
 
     uvicorn.run(
-        "docling_external_api.main:app",
+        "src.main:app",
         host="0.0.0.0",
         port=config.api_port,
         reload=False,

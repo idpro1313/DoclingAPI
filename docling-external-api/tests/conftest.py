@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-package_path = Path(__file__).parent.parent / "docling_external_api"
+package_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(package_path))
 
 logging.basicConfig(
@@ -24,7 +24,7 @@ os.environ.setdefault("EXTERNAL_API_PORT", "5002")
 @pytest.fixture(autouse=True)
 def reset_config():
     """Reset config singleton between tests."""
-    import docling_external_api.config as config_module
+    import src.config as config_module
     config_module._config_instance = None
     yield
     config_module._config_instance = None

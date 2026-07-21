@@ -10,7 +10,7 @@ def _module_contract():
 
 import pytest
 
-from docling_external_api.models import (
+from src.models import (
     ConvertSourceRequest,
     ConvertSourceResponse,
     HealthResponse,

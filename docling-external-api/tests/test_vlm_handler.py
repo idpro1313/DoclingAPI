@@ -11,7 +11,7 @@ def _module_contract():
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
-from docling_external_api.vlm_handler import (
+from src.vlm_handler import (
     extract_pages,
     process_with_vlm,
     call_vlm,
@@ -91,7 +91,7 @@ async def test_process_with_vlm_disabled():
     """Test process_with_vlm returns original doc when VLM is disabled."""
     doc = {"pages": [{"num": 1}]}
 
-    with patch("docling_external_api.vlm_handler.get_config") as mock_get_config:
+    with patch("src.vlm_handler.get_config") as mock_get_config:
         mock_config = MagicMock()
         mock_config.vlm_enabled = False
         mock_get_config.return_value = mock_config
@@ -113,7 +113,7 @@ async def test_process_with_vlm_no_pages():
     """Test process_with_vlm returns original doc when no pages found."""
     doc = {"other": "data"}
 
-    with patch("docling_external_api.vlm_handler.get_config") as mock_get_config:
+    with patch("src.vlm_handler.get_config") as mock_get_config:
         mock_config = MagicMock()
         mock_config.vlm_enabled = True
         mock_config.vlm_model = "test-model"
@@ -147,7 +147,7 @@ async def test_call_vlm_success():
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
 
-    with patch("docling_external_api.vlm_handler.get_config") as mock_get_config:
+    with patch("src.vlm_handler.get_config") as mock_get_config:
         mock_config = MagicMock()
         mock_config.vlm_enabled = True
         mock_config.vlm_base_url = "https://api.test.com/v1"
@@ -156,7 +156,7 @@ async def test_call_vlm_success():
         mock_config.vlm_timeout = 120.0
         mock_get_config.return_value = mock_config
 
-        with patch("docling_external_api.vlm_handler.httpx.AsyncClient", return_value=mock_client):
+        with patch("src.vlm_handler.httpx.AsyncClient", return_value=mock_client):
             result = await call_vlm({"base64": "SGVsbG8="}, page_num=0, img_idx=0)
 
     mock_client.post.assert_called_once()
@@ -174,7 +174,7 @@ async def test_call_vlm_success():
 @pytest.mark.asyncio
 async def test_call_vlm_disabled():
     """Test call_vlm returns error dict when VLM is disabled."""
-    with patch("docling_external_api.vlm_handler.get_config") as mock_get_config:
+    with patch("src.vlm_handler.get_config") as mock_get_config:
         mock_config = MagicMock()
         mock_config.vlm_enabled = False
         mock_get_config.return_value = mock_config

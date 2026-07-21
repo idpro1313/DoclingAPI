@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 import httpx
 
-from docling_external_api.config import get_config
+from src.config import get_config
 
 _log = logging.getLogger(__name__)
 

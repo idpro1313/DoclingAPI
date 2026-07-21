@@ -20,7 +20,7 @@ services:
 
   docling-external-api:
     build:
-      context: ./docling-external-api
+      context: .
       dockerfile: Dockerfile
     ports:
       - "5002:5002"

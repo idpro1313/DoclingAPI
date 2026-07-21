@@ -1,7 +1,7 @@
 """docling-external-api - Standalone service for external API integration with docling-serve."""
 
-from docling_external_api.config import ExternalApiConfig, get_config, load_config
-from docling_external_api.models import (
+from src.config import ExternalApiConfig, get_config, load_config
+from src.models import (
     ConvertSourceRequest,
     ConvertSourceResponse,
     HealthResponse,
