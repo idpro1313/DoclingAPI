@@ -21,6 +21,8 @@ log_success() { printf "%b[OK]%b %s\n" "${GREEN}" "${NC}" "$1"; }
 # Also log to file
 log_step_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') ===> $1" >> "${LOG_FILE}"; }
 log_info_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] $1" >> "${LOG_FILE}"; }
+log_error_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] $1" >> "${LOG_FILE}"; }
+log_success_to_file() { echo "$(date '+%Y-%m-%d %H:%M:%S') [OK] $1" >> "${LOG_FILE}"; }
 
 IMAGE_NAME="docling-serve"
 IMAGE_TAG="latest"
