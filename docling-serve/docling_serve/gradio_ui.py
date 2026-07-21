@@ -833,19 +833,19 @@ with gr.Blocks(
                 )
 
     # External Model API Settings
-    with gr.Accordion("External Model API (vLLM, Ollama)", open=False, visible=docling_serve_settings.external_model_enabled) as external_model_accordion:
+    with gr.Accordion("External Model API (vLLM, Ollama)", open=False) as external_model_accordion:
         with gr.Row():
             with gr.Column(scale=2):
                 enable_external_model = gr.Checkbox(
                     label="Enable External Model API",
-                    value=bool(docling_serve_settings.external_model_base_url),
+                    value=docling_serve_settings.external_model_enabled,
                     info="Use external VLM/LLM API instead of local models",
                 )
             with gr.Column(scale=2):
                 external_model_url = gr.Textbox(
                     label="API URL",
                     placeholder="http://localhost:11434/v1/chat/completions",
-                    value=docling_serve_settings.external_model_base_url,
+                    value=docling_serve_settings.external_model_base_url or "",
                     info="OpenAI-compatible API endpoint",
                 )
         with gr.Row():
@@ -853,7 +853,7 @@ with gr.Blocks(
                 external_model_model = gr.Textbox(
                     label="Model Name",
                     placeholder="llama3.2-vision, granite-vision, etc.",
-                    value=docling_serve_settings.external_model_default_model,
+                    value=docling_serve_settings.external_model_default_model or "",
                     info="Model to use for picture description",
                 )
             with gr.Column(scale=1):
