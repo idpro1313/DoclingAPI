@@ -1,5 +1,8 @@
 # Docling Serve Dockerfile
-# Multi-stage build for optimized image size
+# Optimized for fast rebuilds with BuildKit cache
+
+# syntax=docker/dockerfile:1.4
+# Enable BuildKit features: cache mounts, parallel builds
 
 # ============================================
 # Stage 1: Builder
@@ -9,22 +12,31 @@ FROM python:3.12-slim AS builder
 WORKDIR /app
 
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for faster package installation
-RUN pip install uv
+# Install uv
+RUN --mount=type=cache,target=/root/.local \
+    pip install uv
 
-# Copy dependency files
+# Copy dependency files first (better caching)
 COPY pyproject.toml uv.lock ./
 
-# Copy source code before dependencies install
+# Cache mount for uv/pip packages
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=cache,target=/root/.cache/pip \
+    uv sync --frozen --no-install-project
+
+# Copy source code (changes often, but won't invalidate package cache)
 COPY docling_serve/ ./docling_serve/
 
-# Install dependencies and package
-RUN uv sync --frozen --no-install-project && \
+# Install package with cached dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=cache,target=/root/.cache/pip \
     uv pip install --system --no-deps -e .
 
 # ============================================
@@ -35,7 +47,9 @@ FROM python:3.12-slim AS runtime
 WORKDIR /app
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

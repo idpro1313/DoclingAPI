@@ -44,7 +44,12 @@ done
 
 build_image() {
     log_info "Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
-    docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" -t "${IMAGE_NAME}:latest" .
+    log_info "Using BuildKit for faster rebuilds with layer caching..."
+    DOCKER_BUILDKIT=1 docker build \
+        --build-arg BUILDKIT_INLINE_CACHE=1 \
+        -t "${IMAGE_NAME}:${IMAGE_TAG}" \
+        -t "${IMAGE_NAME}:latest" \
+        .
     log_info "Image built successfully!"
 }
 
