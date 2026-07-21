@@ -7,48 +7,29 @@
 # Build: docker build -f docling-external-api/Dockerfile -t docling-external-api ..
 # Run:   docker run -p 5001:5001 docling-external-api
 
-ARG BASE_IMAGE=quay.io/sclorg/python-312-c9s:c9s
+ARG BASE_IMAGE=python:3.12-slim-bookworm
 ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.8.19
-ARG MIMALLOC_VERSION=v3.2.8
 
 ###################################################################################################
-# Build mimalloc                                                                                  #
+# Base layer                                                                                      #
 ###################################################################################################
-
-FROM ${BASE_IMAGE} AS mimalloc
-
-ARG MIMALLOC_VERSION
-
-USER 0
-
-RUN dnf install -y --best --nodocs --setopt=install_weak_deps=False gcc gcc-c++ make git && \
-    curl -sL https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-linux-x86_64.tar.gz | tar xz -C /usr/local --strip-components=1 && \
-    git clone --depth 1 --branch ${MIMALLOC_VERSION} https://github.com/microsoft/mimalloc.git /opt/app-root/src/mimalloc && \
-    cd /opt/app-root/src/mimalloc && \
-    mkdir -p out/release && \
-    cd out/release && \
-    cmake ../.. && make
-
 
 FROM ${BASE_IMAGE} AS docling-base
 
-###################################################################################################
-# OS Layer                                                                                        #
-###################################################################################################
-
 USER 0
 
-COPY --from=mimalloc /opt/app-root/src/mimalloc/out/release/libmimalloc.so /usr/local/lib/libmimalloc.so
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        tesseract-ocr \
+        tesseract-ocr-eng \
+        tesseract-ocr-osd \
+        libleptonica-dev \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        libatomic1 \
+        libmimalloc-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN dnf -y install --best --nodocs --setopt=install_weak_deps=False dnf-plugins-core && \
-    dnf config-manager --best --nodocs --setopt=install_weak_deps=False --save && \
-    dnf config-manager --enable crb && \
-    dnf -y update && \
-    dnf install -y $(cat /tmp/os-packages.txt) && \
-    dnf -y clean all && \
-    rm -rf /var/cache/dnf
-
-ENV TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
+ENV TESSDATA_PREFIX=/usr/share/tesseract/
 
 
 FROM ${UV_IMAGE} AS uv_stage
@@ -76,12 +57,10 @@ ENV \
 
 COPY --from=uv_stage /uv /bin/uv
 
-# Use LOCAL docling-serve from ../docling-serve (relative to project root)
 WORKDIR /tmp/docling-serve
 
 COPY --chown=1001:0 ../docling-serve/pyproject.toml .
 COPY --chown=1001:0 ../docling-serve/uv.lock .
-COPY --chown=1001:0 ../docling-serve/os-packages.txt .
 
 RUN --mount=type=cache,target=/opt/app-root/src/.cache/uv,uid=1001 \
     --mount=type=bind,source=uv.lock,target=uv.lock \
@@ -89,10 +68,8 @@ RUN --mount=type=cache,target=/opt/app-root/src/.cache/uv,uid=1001 \
     umask 002 && \
     uv sync --frozen --no-dev --all-extras
 
-# Copy docling_serve source
 COPY --chown=1001:0 ../docling-serve/docling_serve /opt/app-root/src/docling_serve
 
-# Re-sync to include the source
 RUN --mount=type=cache,target=/opt/app-root/src/.cache/uv,uid=1001 \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
@@ -110,15 +87,12 @@ USER 1001
 
 WORKDIR /opt/app-root/src
 
-# Copy and install docling-external-api plugin
 COPY --chown=1001:0 ../docling-external-api/src/docling_external_api /opt/app-root/src/docling_external_api
 
-# Create a simple setup.py for the plugin
 RUN echo 'from setuptools import setup; setup(name="docling-external-api", packages=["docling_external_api"], python_requires=">=3.10")' > /tmp/setup.py && \
     mkdir -p /opt/app-root/src/docling_external_api && \
     cp /tmp/setup.py /opt/app-root/src/docling_external_api/setup.py
 
-# Install plugin using pip
 RUN --mount=type=cache,target=/opt/app-root/src/.cache/uv,uid=1001 \
     uv pip install /opt/app-root/src/docling_external_api --no-deps --system
 
@@ -131,15 +105,13 @@ FROM docling-external-api-plugin AS runtime
 
 USER 0
 
-# Copy entrypoint script
 COPY --chown=0:0 ../docling-external-api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 USER 1001
 
-ENV LD_PRELOAD=/usr/local/lib/libmimalloc.so
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libmimalloc.so.2
 
-# Default environment variables for external API plugin
 ENV EXTERNAL_API_VLM_ENABLED=1
 ENV EXTERNAL_API_VLM_BASE_URL=http://192.168.101.15:8111/v1
 ENV EXTERNAL_API_VLM_MODEL=minimax-m2.7
