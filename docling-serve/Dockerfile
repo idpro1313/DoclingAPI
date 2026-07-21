@@ -20,8 +20,12 @@ RUN pip install uv
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies
-RUN uv sync --frozen --no-install-project
+# Copy source code before dependencies install
+COPY docling_serve/ ./docling_serve/
+
+# Install dependencies and package
+RUN uv sync --frozen --no-install-project && \
+    uv pip install --system --no-deps -e .
 
 # ============================================
 # Stage 2: Runtime
@@ -41,12 +45,7 @@ ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Copy application code and install as package (before switching to non-root)
-COPY pyproject.toml uv.lock ./
-COPY docling_serve/ ./docling_serve/
-RUN /app/.venv/bin/pip install --no-deps -e .
-
-# Create non-root user for security and set ownership
+# Create non-root user for security
 RUN groupadd --gid 1000 docling && \
     useradd --uid 1000 --gid docling --shell /bin/bash --create-home docling && \
     chown -R docling:docling /app
