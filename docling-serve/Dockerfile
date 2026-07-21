@@ -43,8 +43,9 @@ COPY docling_serve/ ./docling_serve/
 
 # Re-sync to pick up the editable package install
 # Using --no-dev to match production
+# Skip flash-attn (requires CUDA/torch to build, not needed for CPU)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --python /app/.venv/bin/python --frozen --no-dev --all-extras
+    uv sync --python /app/.venv/bin/python --frozen --no-dev --all-extras --no-extra flash-attn
 
 # ============================================
 # Stage 2: Runtime
