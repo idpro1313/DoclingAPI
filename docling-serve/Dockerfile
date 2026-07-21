@@ -32,6 +32,8 @@ COPY docling_serve/ ./docling_serve/
 
 # Create virtual environment and install everything
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
+ENV UV_LINK_MODE=copy
+ENV UV_COMPILE_BYTECODE=1
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv && \
     uv pip install --python /app/.venv/bin/python -r pyproject.toml && \
