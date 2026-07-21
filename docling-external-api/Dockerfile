@@ -32,8 +32,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV TESSDATA_PREFIX=/usr/share/tesseract/
 
 RUN ln -s /usr/lib/x86_64-linux-gnu/libmimalloc.so.2 /usr/local/lib/libmimalloc.so && \
-    mkdir -p /opt/app-root/src/.cache && \
-    chmod -R 777 /opt/app-root/src/.cache
+    mkdir -p /opt/app-root/src/.cache /opt/app-root && \
+    chmod -R 777 /opt/app-root
 
 
 FROM ${UV_IMAGE} AS uv_stage
