@@ -57,6 +57,7 @@ ENV \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/app-root \
+    UV_CACHE_DIR=/opt/app-root/src/.cache/uv \
     DOCLING_SERVE_ARTIFACTS_PATH=/opt/app-root/src/.cache/docling/models
 
 WORKDIR /tmp/docling-serve
