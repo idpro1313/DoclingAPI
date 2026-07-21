@@ -18,7 +18,9 @@ FROM ${BASE_IMAGE} AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update -o APT::Acquire::Max-Future-Date="0" && apt-get install -y --no-install-recommends \
         tesseract-ocr \
         tesseract-ocr-eng \
         tesseract-ocr-osd \
@@ -26,13 +28,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libgl1-mesa-glx \
         libglib2.0-0 \
         libatomic1 \
-    && rm -rf /var/lib/apt/lists/*
+        curl \
+        pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install uv
 
 ENV TESSDATA_PREFIX=/usr/share/tesseract/
-
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    pip install uv
 
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 ENV UV_LINK_MODE=copy
@@ -69,7 +70,9 @@ FROM ${BASE_IMAGE} AS runtime
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update -o APT::Acquire::Max-Future-Date="0" && apt-get install -y --no-install-recommends \
         tesseract-ocr \
         curl \
     && rm -rf /var/lib/apt/lists/*
