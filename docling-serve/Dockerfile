@@ -31,12 +31,11 @@ COPY pyproject.toml uv.lock ./
 COPY docling_serve/ ./docling_serve/
 
 # Create virtual environment and install everything
-# Using UV_PROJECT_ENVIRONMENT for direct installation (like official Containerfile)
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv && \
-    uv pip install -r pyproject.toml && \
-    uv pip install -e .
+    uv pip install --python /app/.venv/bin/python -r pyproject.toml && \
+    uv pip install --python /app/.venv/bin/python -e .
 
 # ============================================
 # Stage 2: Runtime
