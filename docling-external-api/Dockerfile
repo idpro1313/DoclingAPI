@@ -31,8 +31,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV TESSDATA_PREFIX=/usr/share/tesseract/
 
-RUN mkdir -p /opt/app-root/.cache/uv && chown -R 1001:0 /opt/app-root/.cache && \
-    python -m venv /opt/app-root
+RUN ln -s /usr/lib/x86_64-linux-gnu/libmimalloc.so.2 /usr/local/lib/libmimalloc.so && \
+    mkdir -p /opt/app-root/src/.cache && \
+    chmod -R 777 /opt/app-root/src/.cache
 
 
 FROM ${UV_IMAGE} AS uv_stage
@@ -56,26 +57,27 @@ ENV \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/app-root \
-    UV_CACHE_DIR=/opt/app-root/.cache/uv \
     DOCLING_SERVE_ARTIFACTS_PATH=/opt/app-root/src/.cache/docling/models
-
-COPY --from=uv_stage /uv /bin/uv
 
 WORKDIR /tmp/docling-serve
 
 COPY --chown=1001:0 ../docling-serve/pyproject.toml .
 COPY --chown=1001:0 ../docling-serve/uv.lock .
 
-RUN --mount=type=cache,target=/opt/app-root/.cache/uv,uid=1001 \
+RUN --mount=from=uv_stage,source=/uv,target=/bin/uv \
+    --mount=type=cache,target=/opt/app-root/src/.cache/uv,uid=1001 \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    umask 002 && \
     uv sync --frozen --no-dev --all-extras
 
 COPY --chown=1001:0 ../docling-serve/docling_serve /opt/app-root/src/docling_serve
 
-RUN --mount=type=cache,target=/opt/app-root/.cache/uv,uid=1001 \
+RUN --mount=from=uv_stage,source=/uv,target=/bin/uv \
+    --mount=type=cache,target=/opt/app-root/src/.cache/uv,uid=1001 \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    umask 002 && \
     uv sync --frozen --no-dev --all-extras
 
 
@@ -95,7 +97,8 @@ RUN echo 'from setuptools import setup; setup(name="docling-external-api", packa
     mkdir -p /opt/app-root/src/docling_external_api && \
     cp /tmp/setup.py /opt/app-root/src/docling_external_api/setup.py
 
-RUN --mount=type=cache,target=/opt/app-root/.cache/uv,uid=1001 \
+RUN --mount=from=uv_stage,source=/uv,target=/bin/uv \
+    --mount=type=cache,target=/opt/app-root/src/.cache/uv,uid=1001 \
     uv pip install /opt/app-root/src/docling_external_api --no-deps --system
 
 
@@ -112,7 +115,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 USER 1001
 
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libmimalloc.so.2
+ENV LD_PRELOAD=/usr/local/lib/libmimalloc.so
 
 ENV EXTERNAL_API_VLM_ENABLED=1
 ENV EXTERNAL_API_VLM_BASE_URL=http://192.168.101.15:8111/v1
