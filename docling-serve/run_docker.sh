@@ -28,6 +28,7 @@ IMAGE_NAME="docling-serve"
 IMAGE_TAG="latest"
 CONTAINER_NAME="docling-serve"
 PORT=5001
+CACHE_VOLUME="docling-serve-buildkit-cache"
 
 EXTERNAL_MODEL_ENABLED="${EXTERNAL_MODEL_ENABLED:-false}"
 EXTERNAL_MODEL_URL="${EXTERNAL_MODEL_URL:-http://localhost:11434/v1}"
@@ -53,6 +54,7 @@ BUILD_OPTIMIZED=false
 RUN_CONTAINER=true
 EXTERNAL_MODEL=false
 VERBOSE=false
+CLEAR_CACHE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -60,12 +62,14 @@ while [[ $# -gt 0 ]]; do
         --optimized) BUILD=true; BUILD_OPTIMIZED=true; shift ;;
         --external-model) EXTERNAL_MODEL=true; shift ;;
         --verbose) VERBOSE=true; shift ;;
+        --clear-cache) CLEAR_CACHE=true; shift ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo "  --build           Rebuild the Docker image"
             echo "  --optimized       Build using Dockerfile.optimized (faster, smaller image)"
             echo "  --external-model  Enable external model API (Ollama/vLLM)"
             echo "  --verbose         Verbose Docker build output"
+            echo "  --clear-cache     Clear BuildKit cache before building"
             echo ""
             echo "Environment variables:"
             echo "  EXTERNAL_MODEL_ENABLED   Enable external model (true/false)"
@@ -76,6 +80,14 @@ while [[ $# -gt 0 ]]; do
         *) log_error "Unknown option: $1"; exit 1 ;;
     esac
 done
+
+if [ "$CLEAR_CACHE" = true ]; then
+    log_step "Clearing BuildKit Cache"
+    docker builder prune -f --filter type=exec.cachemount || true
+    docker builder prune -f || true
+    log_success "Cache cleared"
+    echo ""
+fi
 
 show_banner() {
     printf "%b" "${BOLD}"
@@ -92,6 +104,7 @@ build_image() {
     echo "  ${BLUE}Repository:${NC}   ${IMAGE_NAME}"
     echo "  ${BLUE}Tag:${NC}          ${IMAGE_TAG}"
     echo "  ${BLUE}BuildKit:${NC}     Enabled (layer caching)"
+    echo "  ${BLUE}Cache:${NC}        Persistent volume: ${CACHE_VOLUME}"
     PROGRESS_MODE="$([ "$VERBOSE" = true ] && echo verbose || echo tty)"
     echo "  ${BLUE}Progress:${NC}     $PROGRESS_MODE"
     echo ""
@@ -103,6 +116,7 @@ build_image() {
     if [ "$VERBOSE" = true ]; then
         DOCKER_BUILDKIT=1 docker build \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --mount=type=cache,target=/root/.cache/buildkit,sharing=locked \
             --progress=plain \
             -t "${IMAGE_NAME}:${IMAGE_TAG}" \
             -t "${IMAGE_NAME}:latest" \
@@ -110,6 +124,7 @@ build_image() {
     else
         DOCKER_BUILDKIT=1 docker build \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --mount=type=cache,target=/root/.cache/buildkit,sharing=locked \
             --progress=plain \
             -t "${IMAGE_NAME}:${IMAGE_TAG}" \
             -t "${IMAGE_NAME}:latest" \
@@ -233,12 +248,14 @@ build_optimized() {
     log_step "Building Optimized Docker Image"
     log_info "Using Dockerfile.optimized with selective COPY"
     log_info "Expected size: ~5GB (vs 20GB standard)"
+    echo "  ${BLUE}Cache:${NC}        Persistent buildkit cache"
 
     local start_time=$(date +%s)
 
     if [ "$VERBOSE" = true ]; then
         DOCKER_BUILDKIT=1 docker build \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --mount=type=cache,target=/root/.cache/buildkit,sharing=locked \
             -f Dockerfile.optimized \
             --progress=plain \
             -t "${IMAGE_NAME}:${IMAGE_TAG}" \
@@ -248,6 +265,7 @@ build_optimized() {
     else
         DOCKER_BUILDKIT=1 docker build \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --mount=type=cache,target=/root/.cache/buildkit,sharing=locked \
             -f Dockerfile.optimized \
             --progress=tty \
             -t "${IMAGE_NAME}:${IMAGE_TAG}" \
@@ -286,6 +304,10 @@ show_help() {
     echo "  ${CYAN}Remove container:${NC}  docker rm ${CONTAINER_NAME}"
     echo "  ${CYAN}Rebuild:${NC}          $0 --build"
     echo "  ${CYAN}Optimized build:${NC}   $0 --optimized"
+    echo "  ${CYAN}Clear cache:${NC}       $0 --clear-cache"
+    echo ""
+    echo "  ${BLUE}Cache info:${NC}       BuildKit cache persists across git pull"
+    echo "  ${BLUE}Image size:${NC}       Optimized: ~5GB / Standard: ~20GB"
     echo ""
 }
 
