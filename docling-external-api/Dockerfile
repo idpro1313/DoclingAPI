@@ -48,7 +48,7 @@ COPY --chown=1001:0 ../docling-serve/uv.lock .
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv && \
-    uv sync --frozen --no-dev --no-install-project --all-extras --no-extra flash-attn
+    uv sync --frozen --no-dev --no-install-project
 
 COPY --chown=1001:0 ../docling-serve/docling_serve /app/docling_serve
 
