@@ -49,6 +49,7 @@ log_error() { printf "%b[ERROR]%b %s\n" "${RED}" "${NC}" "$1"; }
 log_success() { printf "%b[OK]%b %s\n" "${GREEN}" "${NC}" "$1"; }
 
 BUILD=false
+BUILD_OPTIMIZED=false
 RUN_CONTAINER=true
 EXTERNAL_MODEL=false
 VERBOSE=false
@@ -56,11 +57,13 @@ VERBOSE=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --build) BUILD=true; shift ;;
+        --optimized) BUILD=true; BUILD_OPTIMIZED=true; shift ;;
         --external-model) EXTERNAL_MODEL=true; shift ;;
         --verbose) VERBOSE=true; shift ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo "  --build           Rebuild the Docker image"
+            echo "  --optimized       Build using Dockerfile.optimized (faster, smaller image)"
             echo "  --external-model  Enable external model API (Ollama/vLLM)"
             echo "  --verbose         Verbose Docker build output"
             echo ""
@@ -226,6 +229,53 @@ run_container() {
     docker ps --filter "name=${CONTAINER_NAME}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 }
 
+build_optimized() {
+    log_step "Building Optimized Docker Image"
+    log_info "Using Dockerfile.optimized with selective COPY"
+    log_info "Expected size: ~5GB (vs 20GB standard)"
+
+    local start_time=$(date +%s)
+
+    if [ "$VERBOSE" = true ]; then
+        DOCKER_BUILDKIT=1 docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -f Dockerfile.optimized \
+            --progress=plain \
+            -t "${IMAGE_NAME}:${IMAGE_TAG}" \
+            -t "${IMAGE_NAME}:latest" \
+            -t "${IMAGE_NAME}:optimized" \
+            . 2>&1 | tee -a "${LOG_FILE}"
+    else
+        DOCKER_BUILDKIT=1 docker build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -f Dockerfile.optimized \
+            --progress=tty \
+            -t "${IMAGE_NAME}:${IMAGE_TAG}" \
+            -t "${IMAGE_NAME}:latest" \
+            -t "${IMAGE_NAME}:optimized" \
+            . 2>&1 | tee -a "${LOG_FILE}"
+    fi
+
+    local build_status=${PIPESTATUS[0]}
+    local end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+
+    echo ""
+    if [ $build_status -eq 0 ]; then
+        log_success "Optimized image built in ${duration}s"
+        log_info_to_file "Optimized build SUCCESS in ${duration}s"
+    else
+        log_error "Build FAILED after ${duration}s"
+        log_info_to_file "Build FAILED with status ${build_status}"
+    fi
+
+    local size=$(docker images "${IMAGE_NAME}:${IMAGE_TAG}" --format "{{.Size}}")
+    echo "  ${BLUE}Image size:${NC} $size"
+    log_info_to_file "Image size: $size"
+
+    return $build_status
+}
+
 show_help() {
     printf "%bUseful Commands:%b\n" "${BOLD}" "${NC}"
     echo ""
@@ -235,6 +285,7 @@ show_help() {
     echo "  ${CYAN}Stop container:${NC}    docker stop ${CONTAINER_NAME}"
     echo "  ${CYAN}Remove container:${NC}  docker rm ${CONTAINER_NAME}"
     echo "  ${CYAN}Rebuild:${NC}          $0 --build"
+    echo "  ${CYAN}Optimized build:${NC}   $0 --optimized"
     echo ""
 }
 
@@ -257,7 +308,11 @@ if ! docker image inspect "${IMAGE_NAME}:${IMAGE_TAG}" >/dev/null 2>&1; then
 fi
 
 if [ "$BUILD" = true ]; then
-    build_image
+    if [ "$BUILD_OPTIMIZED" = true ]; then
+        build_optimized
+    else
+        build_image
+    fi
     echo ""
 fi
 

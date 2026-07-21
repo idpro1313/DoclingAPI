@@ -845,7 +845,7 @@ with gr.Blocks(
                 external_model_url = gr.Textbox(
                     label="API URL",
                     placeholder="http://localhost:11434/v1/chat/completions",
-                    value=docling_serve_settings.external_model_base_url or "",
+                    value=docling_serve_settings.external_model_base_url or "http://192.168.101.15:8111/v1",
                     info="OpenAI-compatible API endpoint",
                 )
         with gr.Row():
@@ -853,7 +853,7 @@ with gr.Blocks(
                 external_model_model = gr.Textbox(
                     label="Model Name",
                     placeholder="llama3.2-vision, granite-vision, etc.",
-                    value=docling_serve_settings.external_model_default_model or "",
+                    value=docling_serve_settings.external_model_default_model or "minimax-m2.7",
                     info="Model to use for picture description",
                 )
             with gr.Column(scale=1):
