@@ -29,10 +29,12 @@ COPY pyproject.toml uv.lock ./
 # Copy source code
 COPY docling_serve/ ./docling_serve/
 
-# Install dependencies and package into venv (includes docling_serve.__main__)
+# Create venv and install dependencies + package as editable
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/root/.cache/pip \
-    uv sync --frozen
+    uv venv /app/.venv && \
+    uv pip install --python /app/.venv/bin/python --no-deps -e . && \
+    uv pip install --python /app/.venv/bin/python -r pyproject.toml --extra-index-url https://download.pytorch.org/whl/cpu
 
 # ============================================
 # Stage 2: Runtime
@@ -48,7 +50,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy virtual environment from builder (includes docling_serve package)
+# Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
