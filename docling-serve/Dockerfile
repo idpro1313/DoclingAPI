@@ -41,11 +41,6 @@ ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Create non-root user for security
-RUN groupadd --gid 1000 docling && \
-    useradd --uid 1000 --gid docling --shell /bin/bash --create-home docling
-USER docling
-
 # Copy application code and install as package (before switching to non-root)
 COPY pyproject.toml uv.lock ./
 COPY docling_serve/ ./docling_serve/
