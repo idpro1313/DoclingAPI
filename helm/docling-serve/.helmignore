@@ -1,0 +1,57 @@
+# Patterns to ignore when building packages.
+# This supports shell glob matching and regex matching with a leading !.
+# This is Go's filepath.Match standard.
+
+#.git
+.gitignore
+.git/
+
+# Bitmaps
+*.png
+*.jpg
+*.jpeg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test files
+tests/
+test/
+*.test.yaml
+*.test.values.yaml
+
+# CI/CD
+.circleci/
+.github/
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# Documentation
+LICENSE
+LICENSE*
+README.md
+CONTRIBUTING.md
+CHANGELOG.md
+docs/
+
+# Helm specific
+.helmignore
+
+# Build artifacts
+*.tgz
+*.tar.gz
+
+# Temp files
+*.tmp
+*.bak
+*.orig
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

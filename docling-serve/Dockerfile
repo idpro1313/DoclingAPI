@@ -46,8 +46,16 @@ RUN groupadd --gid 1000 docling && \
     useradd --uid 1000 --gid docling --shell /bin/bash --create-home docling
 USER docling
 
-# Copy application code
-COPY --chown=docling:docling docling_serve/ ./docling_serve/
+# Copy application code and install as package (before switching to non-root)
+COPY pyproject.toml uv.lock ./
+COPY docling_serve/ ./docling_serve/
+RUN /app/.venv/bin/pip install --no-deps -e .
+
+# Create non-root user for security and set ownership
+RUN groupadd --gid 1000 docling && \
+    useradd --uid 1000 --gid docling --shell /bin/bash --create-home docling && \
+    chown -R docling:docling /app
+USER docling
 
 # Environment variables with defaults
 ENV DOCLING_SERVE_HOST=0.0.0.0
