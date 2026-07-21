@@ -20,6 +20,7 @@ COPY src/ ./src/
 
 ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH="/app/src:${PYTHONPATH}"
 
 ENV DOCLING_SERVE_URL=http://docling-serve:5001
 ENV EXTERNAL_API_PORT=5002
