@@ -17,6 +17,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
@@ -29,12 +30,13 @@ COPY pyproject.toml uv.lock ./
 # Copy source code
 COPY docling_serve/ ./docling_serve/
 
-# Create venv and install dependencies + package as editable
+# Create virtual environment and install everything
+# Using UV_PROJECT_ENVIRONMENT for direct installation (like official Containerfile)
+ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=cache,target=/root/.cache/pip \
     uv venv /app/.venv && \
-    uv pip install --python /app/.venv/bin/python --no-deps -e . && \
-    uv pip install --python /app/.venv/bin/python -r pyproject.toml --extra-index-url https://download.pytorch.org/whl/cpu
+    uv pip install -r pyproject.toml --extra-index-url https://download.pytorch.org/whl/cpu && \
+    uv pip install -e .
 
 # ============================================
 # Stage 2: Runtime
@@ -77,5 +79,5 @@ EXPOSE 5001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5001/health || exit 1
 
-# Default command - run the application
-CMD ["python", "-m", "docling_serve"]
+# Default command - use console script entry point (like official Containerfile)
+CMD ["docling-serve", "run"]
