@@ -4,6 +4,7 @@
 services:
   docling-serve:
     image: quay.io/docling-project/docling-serve:latest
+    container_name: docling-serve
     ports:
       - "5001:5001"
     environment:
@@ -26,6 +27,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: docling-external-api
     ports:
       - "5002:5002"
     environment:
