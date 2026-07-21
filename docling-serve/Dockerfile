@@ -35,7 +35,7 @@ COPY docling_serve/ ./docling_serve/
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv && \
-    uv pip install -r pyproject.toml --extra-index-url https://download.pytorch.org/whl/cpu && \
+    uv pip install -r pyproject.toml && \
     uv pip install -e .
 
 # ============================================
