@@ -182,7 +182,7 @@ def main():
     _log.info(f"[IMP:6][main][START] Starting server on port {config.api_port}")
 
     uvicorn.run(
-        "src.main:app",
+        "main:app",
         host="0.0.0.0",
         port=config.api_port,
         reload=False,
