@@ -55,6 +55,7 @@ ENV \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/app-root \
+    UV_CACHE_DIR=/opt/app-root/src/.cache/uv \
     DOCLING_SERVE_ARTIFACTS_PATH=/opt/app-root/src/.cache/docling/models
 
 COPY --from=uv_stage /uv /bin/uv
@@ -67,7 +68,7 @@ COPY --chown=1001:0 ../docling-serve/uv.lock .
 RUN --mount=type=cache,target=/opt/app-root/src/.cache/uv,uid=1001 \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    umask 002 && \
+    UV_CACHE_DIR=/opt/app-root/src/.cache/uv umask 002 && \
     uv sync --frozen --no-dev --all-extras
 
 COPY --chown=1001:0 ../docling-serve/docling_serve /opt/app-root/src/docling_serve
@@ -75,7 +76,7 @@ COPY --chown=1001:0 ../docling-serve/docling_serve /opt/app-root/src/docling_ser
 RUN --mount=type=cache,target=/opt/app-root/src/.cache/uv,uid=1001 \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    umask 002 && \
+    UV_CACHE_DIR=/opt/app-root/src/.cache/uv umask 002 && \
     uv sync --frozen --no-dev --all-extras
 
 
