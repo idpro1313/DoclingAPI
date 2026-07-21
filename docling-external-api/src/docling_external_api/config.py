@@ -95,6 +95,16 @@ class ExternalApiConfig(BaseSettings):
         extra="allow",
     )
 
+    # Service settings
+    docling_serve_url: str = Field(
+        default="http://localhost:5001",
+        description="URL to docling-serve instance"
+    )
+    api_port: int = Field(
+        default=5002,
+        description="Port for external-api server"
+    )
+
     # VLM settings
     vlm_base_url: str = Field(
         default="",
@@ -319,11 +329,26 @@ class ExternalApiConfig(BaseSettings):
 # endregion CLASS_ExternalApiConfig
 
 
+_config_instance: Optional[ExternalApiConfig] = None
+
+
+def get_config() -> ExternalApiConfig:
+    """Get cached config instance.
+
+    Returns:
+        Singleton ExternalApiConfig instance.
+    """
+    global _config_instance
+    if _config_instance is None:
+        _config_instance = ExternalApiConfig()
+        _log.info(f"[IMP:6][get_config][INIT] Config loaded, docling_serve_url={_config_instance.docling_serve_url}")
+        _log.info(f"[IMP:6][get_config][INIT] vlm_enabled={_config_instance.vlm_enabled}")
+    return _config_instance
+
+
 def load_config() -> ExternalApiConfig:
-    """Load configuration from environment variables."""
-    _log.info("[IMP:6][load_config][INIT] Loading ExternalApiConfig from environment")
-    config = ExternalApiConfig()
-    _log.info(
-        f"[IMP:7][load_config][RESULT] Config loaded, enabled engines: {config.enabled_engines}"
-    )
-    return config
+    """Load configuration from environment variables.
+
+    DEPRECATED: Use get_config() instead for caching.
+    """
+    return get_config()

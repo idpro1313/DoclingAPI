@@ -1,8 +1,0 @@
-tesseract
-tesseract-devel
-tesseract-langpack-eng
-tesseract-osd
-leptonica-devel
-libglvnd-glx
-glib2
-libatomic

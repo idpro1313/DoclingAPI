@@ -1,103 +1,29 @@
-# Dockerfile for docling-external-api plugin
-# Extends local docling-serve and installs docling-external-api plugin
-#
-# Build context: .. (project root)
-# Dockerfile location: ./docling-external-api/Dockerfile
-#
-# Build: docker build -f docling-external-api/Dockerfile -t docling-external-api ..
-# Run:   docker run -p 5001:5001 docling-external-api
+# Dockerfile for docling-external-api standalone service
+# Runs as separate container from official docling-serve
 
-ARG BASE_IMAGE=python:3.12-slim-bookworm
-ARG UV_IMAGE=ghcr.io/astral-sh/uv:0.8.19
-
-###################################################################################################
-# Builder stage                                                                                   #
-###################################################################################################
-
-FROM ${BASE_IMAGE} AS builder
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update -o APT::Acquire::Max-Future-Date="0" && apt-get install -y --no-install-recommends \
-        tesseract-ocr \
-        tesseract-ocr-eng \
-        tesseract-ocr-osd \
-        libleptonica-dev \
-        libgl1-mesa-glx \
-        libglib2.0-0 \
-        libatomic1 \
-        curl \
-        pip \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install uv
-
-ENV TESSDATA_PREFIX=/usr/share/tesseract/
-
-ENV UV_PROJECT_ENVIRONMENT=/app/.venv
-ENV UV_LINK_MODE=copy
-ENV UV_COMPILE_BYTECODE=1
-ENV OMP_NUM_THREADS=4
-ENV PYTHONIOENCODING=utf-8
-ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
-
-COPY --chown=1001:0 ../docling-serve/pyproject.toml .
-COPY --chown=1001:0 ../docling-serve/uv.lock .
-
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv venv /app/.venv && \
-    uv sync --frozen --no-dev --no-install-project ".[ui]"
-
-COPY --chown=1001:0 ../docling-serve/docling_serve /app/docling_serve
-
-COPY --chown=1001:0 ../docling-external-api /app/docling-external-api
-
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /app/.venv/bin/python hatchling && \
-    uv pip install --python /app/.venv/bin/python /app/docling-external-api --no-deps
-
-
-###################################################################################################
-# Runtime stage                                                                                   #
-###################################################################################################
-
-FROM ${BASE_IMAGE} AS runtime
-
-WORKDIR /app
-
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update -o APT::Acquire::Max-Future-Date="0" && apt-get install -y --no-install-recommends \
-        tesseract-ocr \
+RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-ENV TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
-ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libmimalloc.so.2
+RUN pip install uv
 
-COPY --from=builder /app/.venv /app/.venv
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv venv /app/.venv && \
+    uv sync --frozen --no-dev
+
+COPY src/ ./src/
 
 ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV DOCLING_SERVE_ARTIFACTS_PATH=/app/.cache/docling/models
 
-RUN groupadd --gid 1000 docling && \
-    useradd --uid 1000 --gid docling --shell /bin/bash --create-home docling && \
-    mkdir -p /app/.cache && \
-    chown -R docling:docling /app
+ENV DOCLING_SERVE_URL=http://docling-serve:5001
+ENV EXTERNAL_API_PORT=5002
 
-USER docling
+EXPOSE 5002
 
-ENV EXTERNAL_API_VLM_ENABLED=1
-ENV EXTERNAL_API_VLM_BASE_URL=http://192.168.101.15:8111/v1
-ENV EXTERNAL_API_VLM_MODEL=minimax-m2.7
-ENV DOCLING_SERVE_ENABLE_REMOTE_SERVICES=true
-ENV DOCLING_SERVE_LOAD_MODELS_AT_BOOT=false
-ENV DOCLING_SERVE_ENABLE_UI=1
-
-EXPOSE 5001
-
-CMD ["docling-serve", "run"]
+CMD ["docling-external-api"]

@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-external-api"
-version = "0.1.0"
-description = "External API plugin for docling-serve with OpenAI-compatible model support"
+version = "0.3.0"
+description = "Standalone service for external API integration with docling-serve"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -29,6 +29,8 @@ classifiers = [
 ]
 
 dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
     "pydantic>=2.10.0",
     "pydantic-settings>=2.4.0",
     "httpx>=0.28.0",
@@ -42,8 +44,8 @@ dev = [
     "mypy>=1.11",
 ]
 
-[project.entry-points."docling"]
-docling_external_api = "docling_external_api.plugin"
+[project.scripts]
+docling-external-api = "docling_external_api.main:main"
 
 [tool.ruff]
 target-version = "py310"
