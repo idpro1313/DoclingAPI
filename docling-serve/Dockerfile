@@ -43,10 +43,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Copy source code
 COPY docling_serve/ ./docling_serve/
 
-# Second sync: install project package (creates entry points)
-# Skip flash-attn as it requires CUDA to build
+# Explicitly install the package in editable mode to create entry points
+# This ensures docling-serve console script is available
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --python /app/.venv/bin/python --frozen --no-dev --no-extra flash-attn
+    uv pip install --python /app/.venv/bin/python -e .
 
 # ============================================
 # Stage 2: Runtime

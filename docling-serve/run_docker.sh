@@ -129,6 +129,10 @@ run_container() {
     echo "  ${BLUE}Port:${NC}         ${PORT}"
     echo "  ${BLUE}Volumes:${NC}      ./data:/data, ./scratch:/tmp/docling-scratch"
 
+    # Create volumes if they don't exist and set permissions for container user
+    mkdir -p data scratch 2>/dev/null || true
+    chmod 777 data scratch 2>/dev/null || true
+
     # Check if container already exists and remove it
     if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
         log_warn "Removing existing container..."
@@ -136,7 +140,7 @@ run_container() {
         docker rm "${CONTAINER_NAME}" 2>/dev/null || true
     fi
 
-    # Build docker run command
+    # Build docker run command with proper port mapping
     DOCKER_CMD="docker run --name ${CONTAINER_NAME} --restart unless-stopped -p ${PORT}:${PORT} --memory=8g --cpus=4"
 
     # External model settings
