@@ -26,18 +26,13 @@ RUN --mount=type=cache,target=/root/.local \
 # Copy dependency files first (better caching)
 COPY pyproject.toml uv.lock ./
 
-# Cache mount for uv/pip packages
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=cache,target=/root/.cache/pip \
-    uv sync --frozen --no-install-project
-
-# Copy source code (changes often, but won't invalidate package cache)
+# Copy source code
 COPY docling_serve/ ./docling_serve/
 
-# Install package with cached dependencies
+# Install dependencies and package into venv (includes docling_serve.__main__)
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/root/.cache/pip \
-    uv pip install --system --no-deps -e .
+    uv sync --frozen
 
 # ============================================
 # Stage 2: Runtime
@@ -53,7 +48,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy virtual environment from builder
+# Copy virtual environment from builder (includes docling_serve package)
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
