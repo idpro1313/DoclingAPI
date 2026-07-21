@@ -21,7 +21,8 @@ ARG MIMALLOC_VERSION
 
 USER 0
 
-RUN dnf install -y --best --nodocs --setopt=install_weak_deps=False gcc gcc-c++ make cmake git && \
+RUN dnf install -y --best --nodocs --setopt=install_weak_deps=False gcc gcc-c++ make git && \
+    curl -sL https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-linux-x86_64.tar.gz | tar xz -C /usr/local --strip-components=1 && \
     git clone --depth 1 --branch ${MIMALLOC_VERSION} https://github.com/microsoft/mimalloc.git /opt/app-root/src/mimalloc && \
     cd /opt/app-root/src/mimalloc && \
     mkdir -p out/release && \
