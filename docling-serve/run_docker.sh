@@ -198,7 +198,7 @@ show_help() {
 show_banner
 
 echo ""
-echo -e "${BLUE}Configuration:${NC}"
+printf "%bConfiguration:%b\n" "${BLUE}" "${NC}"
 printf "  ${BLUE}Build:${NC}     %s\n" "$([ "$BUILD" = true ] && echo yes || echo no)"
 printf "  ${BLUE}Ext Model:${NC} %s\n" "$([ "$EXTERNAL_MODEL" = true ] && echo yes || echo no)"
 printf "  ${BLUE}Verbose:${NC}   %s\n" "$([ "$VERBOSE" = true ] && echo yes || echo no)"
