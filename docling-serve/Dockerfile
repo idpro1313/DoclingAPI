@@ -31,20 +31,22 @@ COPY pyproject.toml uv.lock ./
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 ENV UV_LINK_MODE=copy
 ENV UV_COMPILE_BYTECODE=1
+ENV OMP_NUM_THREADS=4
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv
 
 # First sync: install dependencies only (no project install yet)
+# Skip flash-attn as it requires CUDA to build
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --python /app/.venv/bin/python --frozen --no-dev --no-install-project
+    uv sync --python /app/.venv/bin/python --frozen --no-dev --no-install-project --no-extra flash-attn
 
 # Copy source code
 COPY docling_serve/ ./docling_serve/
 
 # Second sync: install project package (creates entry points)
-# This is the key step that creates docling-serve console script
+# Skip flash-attn as it requires CUDA to build
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --python /app/.venv/bin/python --frozen --no-dev
+    uv sync --python /app/.venv/bin/python --frozen --no-dev --no-extra flash-attn
 
 # ============================================
 # Stage 2: Runtime
@@ -58,7 +60,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
+
+# Set Tesseract data path for OCR
+ENV TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
 
 # Copy virtual environment from builder (includes docling_serve package and entry points)
 COPY --from=builder /app/.venv /app/.venv
