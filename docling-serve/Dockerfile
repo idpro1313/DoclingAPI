@@ -34,18 +34,17 @@ ENV UV_COMPILE_BYTECODE=1
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv /app/.venv
 
-# Install dependencies (no project, just deps)
+# First sync: install dependencies only (no project install yet)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /app/.venv/bin/python -r pyproject.toml
+    uv sync --python /app/.venv/bin/python --frozen --no-dev --no-install-project
 
-# Copy source code (changes often, invalidate deps cache last)
+# Copy source code
 COPY docling_serve/ ./docling_serve/
 
-# Re-sync to pick up the editable package install
-# Using --no-dev to match production
-# Skip flash-attn (requires CUDA/torch to build, not needed for CPU)
+# Second sync: install project package (creates entry points)
+# This is the key step that creates docling-serve console script
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --python /app/.venv/bin/python --frozen --no-dev --all-extras --no-extra flash-attn
+    uv sync --python /app/.venv/bin/python --frozen --no-dev
 
 # ============================================
 # Stage 2: Runtime
@@ -61,7 +60,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy virtual environment from builder (includes docling_serve package)
+# Copy virtual environment from builder (includes docling_serve package and entry points)
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:${PATH}"
 ENV PYTHONUNBUFFERED=1
