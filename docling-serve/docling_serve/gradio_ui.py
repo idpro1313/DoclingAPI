@@ -8,7 +8,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import certifi
 import gradio as gr
@@ -22,7 +22,6 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
 )
 
-from docling_serve.convert_options_extender import build_picture_description_api_config
 from docling_serve.helper_functions import _to_list_of_strings
 from docling_serve.settings import docling_serve_settings, uvicorn_settings
 
@@ -216,49 +215,6 @@ def clear_file_input():
     return None
 
 
-def build_external_model_api_config(
-    enable_external_model: bool,
-    external_model_url: str,
-    external_model_api_key: str,
-    external_model_timeout: float,
-    external_model_model: str,
-) -> Optional[dict]:
-    """Build picture_description_api config dict from UI inputs.
-
-    STRUCTURE: ⚡ [enable, url, api_key, timeout, model] → ○ validate → ◇ build dict → ⎋ dict
-    """
-    if not enable_external_model:
-        logger.debug("[IMP:4][build_external_model_api_config] External model disabled [FLOW]")
-        return None
-
-    if not external_model_url:
-        logger.warning("[IMP:6][build_external_model_api_config] External model URL not provided [WARN]")
-        return None
-
-    api_config: dict[str, Any] = {
-        "url": external_model_url,
-        "params": {
-            "model": external_model_model if external_model_model else "auto",
-        },
-        "timeout": int(external_model_timeout) if external_model_timeout else 60,
-    }
-
-    if external_model_api_key:
-        api_config["api_key"] = external_model_api_key
-
-    logger.info(
-        f"[IMP:5][build_external_model_api_config] Built API config: url={external_model_url}, "
-        f"model={external_model_model} [STATUS]"
-    )
-
-    return api_config
-
-
-def toggle_external_model_settings(enable: bool):
-    """Show/hide external model settings based on enable checkbox."""
-    return gr.update(visible=enable)
-
-
 def auto_set_return_as_file(
     url_input_value: str,
     file_input_value: Optional[list[str]],
@@ -416,11 +372,6 @@ def process_url(
     do_formula_enrichment,
     do_picture_classification,
     do_picture_description,
-    enable_external_model,
-    external_model_url,
-    external_model_api_key,
-    external_model_timeout,
-    external_model_model,
 ):
     target = {"kind": "zip" if return_as_file else "inbody"}
     parameters = {
@@ -445,18 +396,6 @@ def process_url(
         },
         "target": target,
     }
-
-    external_api_config = build_external_model_api_config(
-        enable_external_model=enable_external_model,
-        external_model_url=external_model_url,
-        external_model_api_key=external_model_api_key,
-        external_model_timeout=external_model_timeout,
-        external_model_model=external_model_model,
-    )
-    if external_api_config:
-        parameters["options"]["picture_description_api"] = external_api_config
-        logger.info(f"[IMP:5][process_url] Using external model API: {external_model_url} [STATUS]")
-
     if (
         not parameters["sources"]
         or len(parameters["sources"]) == 0
@@ -515,11 +454,6 @@ def process_file(
     do_formula_enrichment,
     do_picture_classification,
     do_picture_description,
-    enable_external_model,
-    external_model_url,
-    external_model_api_key,
-    external_model_timeout,
-    external_model_model,
 ):
     if not files or len(files) == 0:
         logger.error("No files provided.")
@@ -551,17 +485,6 @@ def process_file(
         },
         "target": target,
     }
-
-    external_api_config = build_external_model_api_config(
-        enable_external_model=enable_external_model,
-        external_model_url=external_model_url,
-        external_model_api_key=external_model_api_key,
-        external_model_timeout=external_model_timeout,
-        external_model_model=external_model_model,
-    )
-    if external_api_config:
-        parameters["options"]["picture_description_api"] = external_api_config
-        logger.info(f"[IMP:5][process_file] Using external model API: {external_model_url} [STATUS]")
 
     headers = {}
     if docling_serve_settings.api_key:
@@ -832,48 +755,6 @@ with gr.Blocks(
                     label="Enable picture description", value=False
                 )
 
-    # External Model API Settings
-    with gr.Accordion("External Model API (vLLM, Ollama)", open=False) as external_model_accordion:
-        with gr.Row():
-            with gr.Column(scale=2):
-                enable_external_model = gr.Checkbox(
-                    label="Enable External Model API",
-                    value=docling_serve_settings.external_model_enabled,
-                    info="Use external VLM/LLM API instead of local models",
-                )
-            with gr.Column(scale=2):
-                external_model_url = gr.Textbox(
-                    label="API URL",
-                    placeholder="http://localhost:11434/v1/chat/completions",
-                    value=docling_serve_settings.external_model_base_url or "http://192.168.101.15:8111/v1",
-                    info="OpenAI-compatible API endpoint",
-                )
-        with gr.Row():
-            with gr.Column(scale=2):
-                external_model_model = gr.Textbox(
-                    label="Model Name",
-                    placeholder="llama3.2-vision, granite-vision, etc.",
-                    value=docling_serve_settings.external_model_default_model or "minimax-m2.7",
-                    info="Model to use for picture description",
-                )
-            with gr.Column(scale=1):
-                external_model_timeout = gr.Slider(
-                    minimum=10,
-                    maximum=300,
-                    value=docling_serve_settings.external_model_timeout or 60,
-                    step=5,
-                    label="Timeout (seconds)",
-                    info="Request timeout for API calls",
-                )
-        with gr.Row():
-            with gr.Column(scale=2):
-                external_model_api_key = gr.Textbox(
-                    label="API Key (optional)",
-                    placeholder="For authenticated endpoints",
-                    type="password",
-                    info="Leave empty for local services like Ollama",
-                )
-
     # Task id output
     with gr.Row(visible=False) as task_id_output:
         task_id_rendered = gr.Textbox(label="Task id", interactive=False)
@@ -967,11 +848,6 @@ with gr.Blocks(
             do_formula_enrichment,
             do_picture_classification,
             do_picture_description,
-            enable_external_model,
-            external_model_url,
-            external_model_api_key,
-            external_model_timeout,
-            external_model_model,
         ],
         outputs=[
             task_id_rendered,
@@ -1060,11 +936,6 @@ with gr.Blocks(
             do_formula_enrichment,
             do_picture_classification,
             do_picture_description,
-            enable_external_model,
-            external_model_url,
-            external_model_api_key,
-            external_model_timeout,
-            external_model_model,
         ],
         outputs=[
             task_id_rendered,
