@@ -25,11 +25,11 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-log_step() { echo -e "\n${BOLD}${CYAN}===>$NC ${BOLD}$1${NC}"; }
-log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
-log_success() { echo -e "${GREEN}[OK]${NC} $1"; }
+log_step() { printf "\n%b===>%b %b%s%b\n" "${BOLD}${CYAN}" "${NC}" "${BOLD}" "$1" "${NC}"; }
+log_info() { printf "%b[INFO]%b %s\n" "${GREEN}" "${NC}" "$1"; }
+log_warn() { printf "%b[WARN]%b %s\n" "${YELLOW}" "${NC}" "$1"; }
+log_error() { printf "%b[ERROR]%b %s\n" "${RED}" "${NC}" "$1"; }
+log_success() { printf "%b[OK]%b %s\n" "${GREEN}" "${NC}" "$1"; }
 
 BUILD=false
 RUN_CONTAINER=true
@@ -58,20 +58,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 show_banner() {
-    echo -e "${BOLD}"
+    printf "%b" "${BOLD}"
     echo "╔════════════════════════════════════════════╗"
     echo "║       Docling Serve Docker Launcher        ║"
     echo "╚════════════════════════════════════════════╝"
-    echo -e "${NC}"
+    printf "%b\n" "${NC}"
 }
 
 build_image() {
     log_step "Building Docker Image"
 
-    echo -e "  ${BLUE}Repository:${NC}   ${IMAGE_NAME}"
-    echo -e "  ${BLUE}Tag:${NC}          ${IMAGE_TAG}"
-    echo -e "  ${BLUE}BuildKit:${NC}     Enabled (layer caching)"
-    echo -e "  ${BLUE}Progress:${NC}     ${VERBOSE:+verbose}${VERBOSE:-tty}"
+    echo "  ${BLUE}Repository:${NC}   ${IMAGE_NAME}"
+    echo "  ${BLUE}Tag:${NC}          ${IMAGE_TAG}"
+    echo "  ${BLUE}BuildKit:${NC}     Enabled (layer caching)"
+    PROGRESS_MODE="$([ "$VERBOSE" = true ] && echo verbose || echo tty)"
+    echo "  ${BLUE}Progress:${NC}     $PROGRESS_MODE"
     echo ""
 
     local start_time=$(date +%s)
@@ -100,7 +101,7 @@ build_image() {
 
     # Show image size
     local size=$(docker images "${IMAGE_NAME}:${IMAGE_TAG}" --format "{{.Size}}")
-    echo -e "  ${BLUE}Image size:${NC} $size"
+    echo "  ${BLUE}Image size:${NC} $size"
 }
 
 pull_image() {
@@ -124,9 +125,9 @@ pull_image() {
 run_container() {
     log_step "Starting Container"
 
-    echo -e "  ${BLUE}Container:${NC}  ${CONTAINER_NAME}"
-    echo -e "  ${BLUE}Port:${NC}         ${PORT}"
-    echo -e "  ${BLUE}Volumes:${NC}      ./data:/data, ./scratch:/tmp/docling-scratch"
+    echo "  ${BLUE}Container:${NC}  ${CONTAINER_NAME}"
+    echo "  ${BLUE}Port:${NC}         ${PORT}"
+    echo "  ${BLUE}Volumes:${NC}      ./data:/data, ./scratch:/tmp/docling-scratch"
 
     # Check if container already exists and remove it
     if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
@@ -141,7 +142,7 @@ run_container() {
     # External model settings
     if [ "$EXTERNAL_MODEL" = true ] || [ "$EXTERNAL_MODEL_ENABLED" = "true" ]; then
         log_info "External model API enabled"
-        echo -e "  ${BLUE}Model URL:${NC} ${EXTERNAL_MODEL_URL}"
+        echo "  ${BLUE}Model URL:${NC} ${EXTERNAL_MODEL_URL}"
         DOCKER_CMD="${DOCKER_CMD} -e DOCLING_SERVE_EXTERNAL_MODEL_ENABLED=true -e DOCLING_SERVE_EXTERNAL_MODEL_BASE_URL=${EXTERNAL_MODEL_URL} -e DOCLING_SERVE_EXTERNAL_MODEL_TIMEOUT=${EXTERNAL_MODEL_TIMEOUT}"
     fi
 
@@ -164,7 +165,7 @@ run_container() {
 
     # Check container status
     local status=$(docker inspect --format='{{.State.Status}}' "${CONTAINER_NAME}" 2>/dev/null || echo "unknown")
-    echo -e "  ${BLUE}Status:${NC} $status"
+    echo "  ${BLUE}Status:${NC} $status"
 
     if [ "$status" = "running" ]; then
         log_success "Container is running"
@@ -173,16 +174,16 @@ run_container() {
     fi
 
     echo ""
-    echo -e "${BOLD}  Access Points:${NC}"
-    echo -e "  ${GREEN}API:${NC}     http://localhost:${PORT}"
-    echo -e "  ${GREEN}Docs:${NC}    http://localhost:${PORT}/docs"
-    echo -e "  ${GREEN}UI:${NC}      http://localhost:${PORT}/ui"
+    printf "%b  Access Points:%b\n" "${BOLD}" "${NC}"
+    echo "  ${GREEN}API:${NC}     http://localhost:${PORT}"
+    echo "  ${GREEN}Docs:${NC}    http://localhost:${PORT}/docs"
+    echo "  ${GREEN}UI:${NC}      http://localhost:${PORT}/ui"
     echo ""
     docker ps --filter "name=${CONTAINER_NAME}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 }
 
 show_help() {
-    echo -e "${BOLD}Useful Commands:${NC}"
+    printf "%bUseful Commands:%b\n" "${BOLD}" "${NC}"
     echo ""
     echo "  ${CYAN}View logs:${NC}        docker logs -f ${CONTAINER_NAME}"
     echo "  ${CYAN}Enter container:${NC}   docker exec -it ${CONTAINER_NAME} bash"
@@ -196,10 +197,11 @@ show_help() {
 # Main execution
 show_banner
 
+echo ""
 echo -e "${BLUE}Configuration:${NC}"
-echo "  ${BLUE}Build:${NC}     ${BUILD:+yes}${BUILD:-no}"
-echo "  ${BLUE}Ext Model:${NC} ${EXTERNAL_MODEL:+yes}${EXTERNAL_MODEL:-no}"
-echo "  ${BLUE}Verbose:${NC}   ${VERBOSE:+yes}${VERBOSE:-no}"
+printf "  ${BLUE}Build:${NC}     %s\n" "$([ "$BUILD" = true ] && echo yes || echo no)"
+printf "  ${BLUE}Ext Model:${NC} %s\n" "$([ "$EXTERNAL_MODEL" = true ] && echo yes || echo no)"
+printf "  ${BLUE}Verbose:${NC}   %s\n" "$([ "$VERBOSE" = true ] && echo yes || echo no)"
 echo ""
 
 # Check if image exists
